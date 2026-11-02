@@ -16,3 +16,43 @@ footer{background:#082c4d;color:#d9e7f3;padding-top:45px}.footer-grid{display:gr
 .detail-hero{background:linear-gradient(135deg,#083b6c,#0a72c8);color:#fff;padding:42px 0 50px}.back-link{display:inline-block;color:#d8f4ff;font-weight:700;margin-bottom:28px}.detail-hero .eyebrow{color:#a7f1d9}.detail-hero h1{font-size:clamp(34px,5vw,52px);line-height:1.1;margin:8px 0}.detail-hero p:not(.eyebrow){margin:0;color:#d9e9f7;font-size:17px}.detail-badge{display:inline-block;padding:6px 11px;border-radius:20px;background:#ffffff22;border:1px solid #ffffff3d;font-size:12px;font-weight:800}.detail-layout{padding:42px 0 65px;max-width:1000px}.detail-card{background:#fff;border:1px solid #dce7f2;border-radius:18px;padding:28px;box-shadow:0 8px 30px #17365d0b}.demo-note{background:#fff7e5;border:1px solid #f0d28a;color:#6f5310;padding:13px 15px;border-radius:10px;font-size:13px;margin-bottom:22px}.detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}.secondary-btn,.danger-btn{border:1px solid #cfdde9;background:#fff;color:#17365d;border-radius:9px;padding:10px 16px;font-weight:800;cursor:pointer}.secondary-btn:hover{background:#f2f7fb}.detail-card h2{font-size:22px;margin:28px 0 12px}.overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}.overview-grid div{border:1px solid #e1eaf3;border-radius:11px;padding:14px}.overview-grid span{display:block;color:#73859a;font-size:11px;text-transform:uppercase;letter-spacing:.6px}.overview-grid strong{display:block;margin-top:3px}.admin-page{background:#f6f9fc;padding:40px 0 70px;min-height:70vh}.admin-page h1{font-size:36px;margin:0}.admin-warning{background:#fff7e5;border:1px solid #f0d28a;border-radius:12px;padding:15px;margin:18px 0}.admin-form{background:#fff;border:1px solid #dce7f2;border-radius:16px;padding:25px}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}.admin-form label{display:block;font-weight:700;font-size:13px;color:#284665}.admin-form input,.admin-form select,.admin-form textarea{display:block;width:100%;margin-top:6px;border:1px solid #d5e1ec;border-radius:9px;padding:11px 12px;outline:0;background:#fff;color:#17365d}.admin-form input:focus,.admin-form select:focus,.admin-form textarea:focus{border-color:#0876d1}.form-message{display:inline-block;margin-left:10px;color:#08765b;font-size:13px}.admin-list{padding-bottom:0}.admin-row{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#fff;border:1px solid #dce7f2;border-radius:12px;padding:15px 18px;margin-bottom:10px}.admin-row strong,.admin-row span{display:block}.admin-row span{font-size:12px;color:#6b7e93;margin-top:3px}.row-actions{display:flex;gap:8px;flex-shrink:0}.danger,.danger-btn{color:#b42318}.danger-btn{border-color:#f0c9c5}.danger-btn:hover{background:#fff3f2}
 @media(max-width:800px){.overview-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.overview-grid,.form-grid{grid-template-columns:1fr}.admin-row{align-items:flex-start;flex-direction:column}.row-actions{width:100%}.detail-card{padding:20px}}
+
+/* Mockup alignment update */
+.caritas-logo{display:block;width:178px;height:auto;object-fit:contain;flex:0 0 auto}
+.brand{gap:18px;min-width:0}
+.brand-divider{height:52px;width:1px;background:#9fb4c9;display:block;flex:0 0 1px}
+.brand-copy strong{font-size:25px;letter-spacing:-.7px;white-space:nowrap}
+.brand-copy small{font-size:16px;letter-spacing:0;text-transform:none;color:#1262ad;margin-top:2px}
+.nav-wrap{min-height:94px;gap:22px}
+#mainNav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:0 25px;max-width:650px;font-size:12px}
+#mainNav a{padding:10px 0;border-bottom:3px solid transparent}
+#mainNav a.active{border-bottom-color:#0878c9}
+#mainNav .nav-admin{display:none}
+.hero{padding:44px 0 0;min-height:305px;background:linear-gradient(90deg,#07518dcc,#07518d88),linear-gradient(180deg,#68a5ca,#103d64)}
+.hero-landscape{background:radial-gradient(ellipse at 20% 100%,#386c4d 0 16%,transparent 40%),radial-gradient(ellipse at 80% 90%,#52784c 0 18%,transparent 42%),linear-gradient(175deg,#6fb1dc 0%,#2d78a9 48%,#174c70 100%)}
+.hero-landscape:after{content:"";position:absolute;inset:42% 0 0;background:linear-gradient(165deg,transparent 0 17%,#315f6a 18% 30%,transparent 31%),linear-gradient(15deg,#214f3f 0 24%,transparent 25%),linear-gradient(175deg,transparent 0 44%,#1f4b39 45% 100%);opacity:.8}
+.hero-copy{margin:0 auto 58px;max-width:900px}
+.hero h1{font-size:clamp(38px,4vw,46px);letter-spacing:-1.1px;margin-bottom:14px}
+.hero-copy>p:not(.eyebrow){font-size:19px;line-height:1.5;color:white;font-weight:600}
+.search-panel{margin-bottom:-22px;padding:12px;border-radius:13px}
+.hero-inner{padding-bottom:0}
+.categories-section{padding-top:48px;padding-bottom:20px}
+.category-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+.category-card{padding:9px 7px 13px;border-radius:10px;min-height:160px}
+.category-icon{width:65px;height:65px;color:#fff!important;font-size:27px;margin-bottom:8px}
+.icon-blue{background:#15966b}.icon-green{background:#0878e8}.icon-orange{background:#7040c6}.icon-purple{background:#f08b16}.icon-teal{background:#df2452}.icon-red{background:#0c8796}.icon-navy{background:#244b98}
+.category-card b{font-size:13px;color:#102f54}
+.category-card small{font-size:11px;color:#657b93}
+.jobs-section{padding-top:24px;padding-bottom:25px;background:#f6f9fc}
+.jobs-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.job-card{padding:16px;border-radius:9px}
+.job-card h3{font-size:15px;margin:10px 0 4px}
+.alert-banner{margin-top:0;margin-bottom:12px;padding:15px 22px;border-radius:9px}
+.alert-banner h2{font-size:18px}
+.newspaper-section{display:none}
+.about.section{padding-top:35px;padding-bottom:35px}
+.footer-grid{grid-template-columns:1.3fr .7fr .8fr;padding-bottom:22px}
+.footer-logo{filter:brightness(0) invert(1);width:165px}
+footer{padding-top:25px}
+@media(max-width:1100px){#mainNav{max-width:540px;gap:0 15px}.brand-copy strong{font-size:20px}.caritas-logo{width:145px}.category-grid{grid-template-columns:repeat(4,1fr)}.jobs-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.nav-wrap{min-height:74px}.brand{gap:9px}.caritas-logo{width:94px}.brand-divider{height:40px}.brand-copy strong{font-size:14px;white-space:normal}.brand-copy small{font-size:11px}#mainNav{top:74px;max-width:none;gap:0;flex-wrap:nowrap}#mainNav .nav-admin{display:block}.hero{padding-top:38px}.hero-copy{margin-bottom:48px}.hero-copy>p:not(.eyebrow){font-size:14px}.category-grid{grid-template-columns:repeat(2,1fr)}.jobs-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.footer-logo{width:145px}}
