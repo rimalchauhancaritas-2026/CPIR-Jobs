@@ -4,96 +4,100 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Caritas Youth Jobs Portal - employment opportunities in Rawalpindi and Islamabad.">
+  <meta name="theme-color" content="#073763">
   <title>Caritas Youth Jobs Portal | Rawalpindi & Islamabad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="site-header">
   <div class="container nav-wrap">
-    <a class="brand" href="index.html">
-      <div class="brand-mark">✚</div>
-      <div><strong>Caritas Youth Jobs Portal</strong><span>Rawalpindi & Islamabad</span></div>
+    <a class="brand" href="index.html" aria-label="Caritas Youth Jobs Portal home">
+      <div class="brand-mark" aria-hidden="true">✚</div>
+      <div class="brand-copy"><strong>Caritas <span>Youth Jobs</span></strong><small>RAWALPINDI &amp; ISLAMABAD</small></div>
     </a>
     <button class="menu-btn" aria-label="Open menu" onclick="toggleMenu()">☰</button>
     <nav id="mainNav">
       <a class="active" href="index.html">Home</a>
-      <a href="index.html#jobs">Jobs</a>
-      <a href="index.html#categories">Categories</a>
-      <a href="index.html#newspaper">Newspaper Jobs</a>
-      <a href="index.html#about">About</a>
-      <a href="admin.html">Admin Login</a>
+      <a href="#jobs">Jobs</a>
+      <a href="#categories">Categories</a>
+      <a href="#newspaper">Newspaper Jobs</a>
+      <a href="#about">About</a>
+      <a class="nav-admin" href="admin.html">Admin Login <span>↗</span></a>
     </nav>
   </div>
 </header>
 
 <main id="home">
   <section class="hero">
+    <div class="hero-landscape" aria-hidden="true"><div class="hill hill-back"></div><div class="hill hill-front"></div><div class="mosque"><i></i><i></i><i></i><b></b></div></div>
     <div class="container hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow">CARITAS YOUTH JOBS PORTAL</p>
+        <p class="eyebrow">YOUR LOCAL CAREER RESOURCE</p>
         <h1>Find Your <span>Next Opportunity</span></h1>
-        <p>Discover current employment opportunities in Rawalpindi and Islamabad from government, private organizations, NGOs and newspaper advertisements.</p>
+        <p>Explore government, private, NGO and newspaper job opportunities across Rawalpindi and Islamabad — all in one place.</p>
+        <div class="hero-points"><span>✓ Local opportunities</span><span>✓ Clear job details</span><span>✓ Easy to explore</span></div>
       </div>
-
       <form class="search-panel" onsubmit="event.preventDefault(); filterJobs();">
-        <label class="search-field grow"><span>🔎</span><input id="keyword" type="search" placeholder="Job title, organization or keyword"></label>
-        <label class="select-field"><select id="category"><option value="">All categories</option><option>Government</option><option>Private</option><option>Newspaper</option><option>Internship</option><option>NGO / Development</option></select></label>
-        <label class="select-field"><select id="city"><option value="">Both cities</option><option>Islamabad</option><option>Rawalpindi</option></select></label>
-        <label class="select-field"><select id="qualification"><option value="">Any qualification</option><option>Matric</option><option>Intermediate</option><option>Diploma</option><option>Bachelor's</option><option>Master's</option></select></label>
-        <button class="primary-btn" type="submit">Search Jobs</button>
+        <label class="search-field grow"><span aria-hidden="true">⌕</span><input id="keyword" type="search" placeholder="Job title, organization or keyword" aria-label="Search keyword"></label>
+        <label class="select-field"><select id="category" aria-label="Job category"><option value="">All categories</option><option>Government</option><option>Private</option><option>Newspaper</option><option>Internship</option><option>NGO / Development</option></select></label>
+        <label class="select-field"><select id="city" aria-label="City"><option value="">Both cities</option><option>Islamabad</option><option>Rawalpindi</option></select></label>
+        <label class="select-field"><select id="qualification" aria-label="Qualification"><option value="">Any qualification</option><option>Matric</option><option>Intermediate</option><option>Diploma</option><option>Bachelor's</option><option>Master's</option></select></label>
+        <button class="primary-btn" type="submit">Search Jobs <span>→</span></button>
       </form>
     </div>
+    <div class="hero-bottom container"><span>OPPORTUNITIES CLOSE TO HOME</span><span>RAWALPINDI&nbsp; • &nbsp;ISLAMABAD</span></div>
   </section>
 
-  <section class="container section" id="categories">
+  <section class="container section categories-section" id="categories">
+    <div class="section-heading"><div><p class="eyebrow">EXPLORE BY TYPE</p><h2>Find the right opportunity</h2></div><p class="heading-note">Choose a category to explore matching vacancies.</p></div>
     <div class="category-grid">
-      <button class="category-card" onclick="quickFilter('Government')"><span>🏛️</span><b>Government Jobs</b><small>Public-sector opportunities</small></button>
-      <button class="category-card" onclick="quickFilter('Private')"><span>🏢</span><b>Private Jobs</b><small>Jobs with companies</small></button>
-      <button class="category-card" onclick="quickFilter('Newspaper')"><span>📰</span><b>Newspaper Jobs</b><small>Jobs from newspaper ads</small></button>
-      <button class="category-card" onclick="quickFilter('Internship')"><span>🎓</span><b>Internships</b><small>Start your career</small></button>
-      <button class="category-card" onclick="quickFilter('NGO / Development')"><span>🤝</span><b>NGO / Development</b><small>Community & development</small></button>
-      <button class="category-card" onclick="quickCity('Rawalpindi')"><span>📍</span><b>Rawalpindi Jobs</b><small>Jobs in Rawalpindi</small></button>
-      <button class="category-card" onclick="quickCity('Islamabad')"><span>📍</span><b>Islamabad Jobs</b><small>Jobs in Islamabad</small></button>
+      <button class="category-card" onclick="quickFilter('Government')"><span class="category-icon icon-blue">▤</span><b>Government Jobs</b><small>Public-sector careers</small></button>
+      <button class="category-card" onclick="quickFilter('Private')"><span class="category-icon icon-green">▦</span><b>Private Jobs</b><small>Companies &amp; businesses</small></button>
+      <button class="category-card" onclick="quickFilter('Newspaper')"><span class="category-icon icon-orange">▧</span><b>Newspaper Jobs</b><small>Published job adverts</small></button>
+      <button class="category-card" onclick="quickFilter('Internship')"><span class="category-icon icon-purple">✳</span><b>Internships</b><small>Begin your career</small></button>
+      <button class="category-card" onclick="quickFilter('NGO / Development')"><span class="category-icon icon-teal">♡</span><b>NGO / Development</b><small>Make a difference</small></button>
+      <button class="category-card" onclick="quickCity('Rawalpindi')"><span class="category-icon icon-red">⌖</span><b>Rawalpindi Jobs</b><small>Opportunities in the city</small></button>
+      <button class="category-card" onclick="quickCity('Islamabad')"><span class="category-icon icon-navy">⌖</span><b>Islamabad Jobs</b><small>Opportunities in the capital</small></button>
     </div>
   </section>
 
-  <section class="section light" id="jobs">
+  <section class="section jobs-section" id="jobs">
     <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">OPPORTUNITIES</p><h2>Latest Jobs</h2></div>
-        <button class="text-btn" onclick="resetFilters()">Clear filters ↗</button>
-      </div>
+      <div class="section-heading"><div><p class="eyebrow">RECENT LISTINGS</p><h2>Latest Jobs</h2><p class="section-subtitle">Discover recently published opportunities in your area.</p></div><button class="text-btn" onclick="resetFilters()">Clear filters ↗</button></div>
       <div id="resultCount" class="result-count"></div>
       <div id="jobsGrid" class="jobs-grid"></div>
-      <div id="emptyState" class="empty hidden"><h3>No matching jobs</h3><p>Try changing your search or filters.</p><button class="primary-btn" onclick="resetFilters()">Show all jobs</button></div>
+      <div id="emptyState" class="empty hidden"><div class="empty-icon">⌕</div><h3>No matching jobs found</h3><p>Try changing your search or filters to see more opportunities.</p><button class="primary-btn" onclick="resetFilters()">Show all jobs</button></div>
     </div>
   </section>
 
   <section class="container alert-banner">
-    <div><p class="eyebrow">PLANNED FEATURE</p><h2>Get new job alerts</h2><p>Email and WhatsApp alerts can be connected after the portal has a live database.</p></div>
-    <a class="primary-btn" href="mailto:jobs@example.org?subject=Caritas Youth Jobs Alert">Join interest list</a>
+    <div class="alert-symbol">✉</div><div class="alert-copy"><p class="eyebrow">STAY IN THE LOOP</p><h2>Ready to build your future?</h2><p>Job alerts are a planned feature. Contact the portal team to express interest in future updates.</p></div>
+    <a class="primary-btn" href="mailto:jobs@example.org?subject=Caritas%20Youth%20Jobs%20Alert">Get Job Alerts <span>→</span></a>
   </section>
 
-  <section class="container section two-col" id="newspaper">
-    <div><p class="eyebrow">NEWSPAPER SECTION</p><h2>Newspaper job cuttings</h2><p>We can add newspaper advertisements with their date, source, location and application details. Before publishing complete cuttings, confirm the appropriate permission or link to the original source.</p></div>
-    <div class="info-card"><h3>Planned sources</h3><ul><li>Daily Jang</li><li>Express</li><li>Dawn</li><li>The News</li><li>Nawaiwaqt</li><li>Dunya</li></ul></div>
+  <section class="container section newspaper-section" id="newspaper">
+    <div class="newspaper-copy"><p class="eyebrow">FROM THE DAILY PAPERS</p><h2>Newspaper job opportunities</h2><p>Find vacancies shared through newspaper advertisements. Each listing should include its publication source and application information so you can verify the details.</p><a class="inline-link" href="#jobs" onclick="quickFilter('Newspaper')">Explore newspaper jobs →</a></div>
+    <div class="paper-card"><div class="paper-top"><span>JOB WATCH</span><span>LOCAL EDITION</span></div><div class="paper-lines"><b></b><i></i><i></i><i></i><i></i></div><div class="paper-caption">Opportunities from trusted public sources</div></div>
   </section>
 
   <section class="section about" id="about">
     <div class="container two-col">
-      <div><p class="eyebrow">ABOUT THE PORTAL</p><h2>Local opportunities, organized simply.</h2><p>The launch version is intentionally limited to Rawalpindi and Islamabad. Other cities can be added later without changing the core design.</p></div>
-      <div class="info-card"><h3>Publishing rule</h3><p><strong>Location:</strong> Rawalpindi or Islamabad only.</p><p><strong>Source:</strong> Each listing should identify its original source.</p><p><strong>Deadline:</strong> Each listing should show a closing date where available.</p><p><strong>Safety:</strong> Job seekers should verify application details through the original employer/source.</p></div>
+      <div><p class="eyebrow">ABOUT THIS PORTAL</p><h2>Local opportunities.<br><span>Clear information.</span></h2><p>Caritas Youth Jobs Portal brings together employment information for young people in Rawalpindi and Islamabad. Browse listings, review requirements and follow the original employer's instructions when applying.</p></div>
+      <div class="about-points"><div><b>01</b><span><strong>Focused locally</strong><small>Listings for Rawalpindi and Islamabad.</small></span></div><div><b>02</b><span><strong>Useful details</strong><small>Role, location, qualification and deadline.</small></span></div><div><b>03</b><span><strong>Verify before applying</strong><small>Always confirm details with the original employer or source.</small></span></div></div>
     </div>
   </section>
 </main>
 
 <footer id="contact">
   <div class="container footer-grid">
-    <div><div class="brand footer-brand"><div class="brand-mark">✚</div><div><strong>Caritas Youth Jobs Portal</strong><span>Rawalpindi & Islamabad</span></div></div><p>Empowering youth through accessible local employment information.</p></div>
-    <div><h4>Quick links</h4><a href="index.html#jobs">Jobs</a><a href="index.html#newspaper">Newspaper Jobs</a><a href="index.html#about">About</a></div>
-    <div><h4>Contact</h4><a href="mailto:jobs@example.org">jobs@example.org</a><span>Rawalpindi & Islamabad</span></div>
+    <div><div class="brand footer-brand"><div class="brand-mark">✚</div><div class="brand-copy"><strong>Caritas <span>Youth Jobs</span></strong><small>RAWALPINDI &amp; ISLAMABAD</small></div></div><p>Connecting young people with accessible local employment information.</p></div>
+    <div><h4>Explore</h4><a href="#jobs">Latest Jobs</a><a href="#categories">Job Categories</a><a href="#newspaper">Newspaper Jobs</a><a href="#about">About the Portal</a></div>
+    <div><h4>Location</h4><p class="footer-location">⌖ &nbsp;Rawalpindi &amp; Islamabad<br>Pakistan</p><a href="mailto:jobs@example.org">Contact portal team</a></div>
   </div>
-  <div class="copyright">© 2026 Caritas Youth Jobs Portal — Version 1.2</div>
+  <div class="copyright">© 2026 Caritas Youth Jobs Portal <span>•</span> Local opportunities for local talent</div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
