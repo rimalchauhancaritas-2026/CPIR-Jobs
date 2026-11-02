@@ -56,3 +56,75 @@ footer{background:#082c4d;color:#d9e7f3;padding-top:45px}.footer-grid{display:gr
 footer{padding-top:25px}
 @media(max-width:1100px){#mainNav{max-width:540px;gap:0 15px}.brand-copy strong{font-size:20px}.caritas-logo{width:145px}.category-grid{grid-template-columns:repeat(4,1fr)}.jobs-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.nav-wrap{min-height:74px}.brand{gap:9px}.caritas-logo{width:94px}.brand-divider{height:40px}.brand-copy strong{font-size:14px;white-space:normal}.brand-copy small{font-size:11px}#mainNav{top:74px;max-width:none;gap:0;flex-wrap:nowrap}#mainNav .nav-admin{display:block}.hero{padding-top:38px}.hero-copy{margin-bottom:48px}.hero-copy>p:not(.eyebrow){font-size:14px}.category-grid{grid-template-columns:repeat(2,1fr)}.jobs-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.footer-logo{width:145px}}
+
+/* Final desktop mockup match */
+.container{width:min(1400px,92%)}
+.site-header{box-shadow:none;border-bottom:2px solid #dce8f3}
+.nav-wrap{min-height:92px;gap:24px}
+.brand{gap:16px;min-width:0}
+.caritas-logo{width:190px;height:auto}
+.brand-divider{height:60px}
+.brand-copy strong{font-size:28px;letter-spacing:-.8px}
+.brand-copy small{font-size:17px;color:#1262ad;font-weight:700;letter-spacing:0}
+#mainNav{max-width:690px;gap:0 25px;font-size:13px}
+#mainNav a{padding:8px 0}
+.hero{min-height:310px;padding:42px 0 0}
+.hero-landscape{background:
+ radial-gradient(ellipse at 8% 105%,#294e35 0 13%,transparent 32%),
+ radial-gradient(ellipse at 90% 100%,#355a3a 0 17%,transparent 38%),
+ linear-gradient(180deg,#72b4e2 0%,#2676a9 50%,#174f78 100%)}
+.hero-landscape:before{content:"";position:absolute;inset:35% 0 0;background:
+ linear-gradient(165deg,transparent 0 15%,#345d61 16% 32%,transparent 33%),
+ linear-gradient(15deg,#345d3c 0 24%,transparent 25%),
+ linear-gradient(175deg,transparent 0 47%,#244b37 48% 100%);opacity:.9}
+.hero-landscape:after{inset:0;background:
+ linear-gradient(90deg,#0c4d7866,transparent 35%,transparent 70%,#0c4d7866),
+ radial-gradient(ellipse at 50% 75%,#ffffff18,transparent 45%);opacity:1}
+.hero-copy{margin:0 auto 58px;max-width:950px}
+.hero h1{font-size:46px;letter-spacing:-1.3px;margin-bottom:14px}
+.hero-copy>p:not(.eyebrow){font-size:20px;line-height:1.45;color:#fff;font-weight:700}
+.search-panel{padding:13px;gap:12px;border-radius:14px;transform:translateY(0);box-shadow:0 12px 35px #082e4b44}
+.search-field,.select-field{height:50px;border-radius:7px;border-color:#d8e5f1}
+.search-field{flex:1.6}
+.select-field{flex:1}
+.primary-btn{border-radius:7px;padding:14px 23px}
+.categories-section{padding-top:26px;padding-bottom:18px}
+.category-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.category-card{min-height:163px;padding:8px 9px 12px;border-radius:9px;border-color:#d9e6f3;box-shadow:none}
+.category-icon{width:70px;height:70px;border-radius:50%;color:#fff!important;font-size:29px;margin:0 auto 8px}
+.icon-blue{background:#15966b}.icon-green{background:#0878e8}.icon-orange{background:#7040c6}.icon-purple{background:#f08b16}.icon-teal{background:#df2452}.icon-red{background:#0c8796}.icon-navy{background:#244b98}
+.category-card b{font-size:14px;color:#082f63}
+.category-card small{font-size:12px;color:#627c9b}
+.jobs-section{padding:18px 0 16px;background:#f7fafc}
+.jobs-section .section-heading{margin-bottom:14px;align-items:center}
+.section-heading h2{font-size:29px;border-left:6px solid #19ad80;padding-left:18px}
+.jobs-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.job-card{padding:15px 16px 14px;border-radius:8px;box-shadow:0 2px 8px #12395b0c}
+.job-card h3{font-size:16px;margin:9px 0 4px}
+.org{font-size:13px;min-height:40px}
+.meta{font-size:12px;gap:10px;margin:10px 0}
+.deadline{font-size:12px;margin-bottom:12px;color:#f01818}
+.job-card .primary-btn{border:1px solid #1680ff;background:#fff;color:#0878e8;padding:8px;font-size:12px}
+.job-card .primary-btn:hover{background:#eff7ff}
+.alert-banner{margin:0 auto 12px;padding:14px 24px;border-radius:8px;background:#e8f3fd;gap:18px}
+.alert-symbol{background:transparent;font-size:35px;width:62px;height:48px}
+.alert-copy .eyebrow{display:none}
+.alert-banner h2{font-size:18px;color:#0758a9}
+.alert-banner p:not(.eyebrow){font-size:12px}
+.alert-banner>.primary-btn{padding:11px 20px}
+.newspaper-section,.about{display:none!important}
+footer{background:#082f57;padding-top:22px}
+.footer-grid{grid-template-columns:1.7fr .65fr .65fr .9fr;gap:30px;padding-bottom:17px;align-items:center}
+.footer-brand{display:flex;gap:14px;align-items:center}
+.footer-logo{width:150px;filter:brightness(0) invert(1)}
+.footer-brand .brand-copy strong{font-size:17px;color:white;white-space:normal}
+.footer-brand .brand-copy small{font-size:11px;color:#d7e5f3;letter-spacing:0}
+.footer-grid h4{font-size:12px;margin-bottom:5px}
+.footer-grid a{font-size:11px;margin:3px 0}
+.footer-grid p{font-size:11px;margin:0}
+.social-links{display:flex;gap:14px}
+.social-links a{font-size:20px;font-weight:700;color:#fff}
+.copyright{display:flex;justify-content:space-between;padding:9px 4%;font-size:10px;color:#d2deeb}
+.legal-links{margin-left:auto}
+@media(max-width:1100px){.container{width:94%}.brand-copy strong{font-size:20px}.brand-copy small{font-size:13px}#mainNav{max-width:570px;gap:0 15px}.category-grid{grid-template-columns:repeat(4,1fr)}.jobs-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.nav-wrap{min-height:74px}.brand{gap:9px}.caritas-logo{width:94px}.brand-divider{height:40px}.brand-copy strong{font-size:14px;white-space:normal}.brand-copy small{font-size:11px}#mainNav{top:74px;max-width:none;gap:0;flex-wrap:nowrap}.hero{padding-top:38px}.hero-copy{margin-bottom:48px}.hero h1{font-size:34px}.hero-copy>p:not(.eyebrow){font-size:14px}.category-grid{grid-template-columns:repeat(2,1fr)}.jobs-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}.footer-logo{width:105px}.footer-brand .brand-copy strong{font-size:14px}.footer-brand .brand-copy small{font-size:10px}.copyright{gap:8px;flex-direction:column}.legal-links{margin-left:0}}
