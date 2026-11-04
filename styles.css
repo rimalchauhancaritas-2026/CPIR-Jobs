@@ -128,3 +128,28 @@ footer{background:#082f57;padding-top:22px}
 .legal-links{margin-left:auto}
 @media(max-width:1100px){.container{width:94%}.brand-copy strong{font-size:20px}.brand-copy small{font-size:13px}#mainNav{max-width:570px;gap:0 15px}.category-grid{grid-template-columns:repeat(4,1fr)}.jobs-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.nav-wrap{min-height:74px}.brand{gap:9px}.caritas-logo{width:94px}.brand-divider{height:40px}.brand-copy strong{font-size:14px;white-space:normal}.brand-copy small{font-size:11px}#mainNav{top:74px;max-width:none;gap:0;flex-wrap:nowrap}.hero{padding-top:38px}.hero-copy{margin-bottom:48px}.hero h1{font-size:34px}.hero-copy>p:not(.eyebrow){font-size:14px}.category-grid{grid-template-columns:repeat(2,1fr)}.jobs-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}.footer-logo{width:105px}.footer-brand .brand-copy strong{font-size:14px}.footer-brand .brand-copy small{font-size:10px}.copyright{gap:8px;flex-direction:column}.legal-links{margin-left:0}}
+
+
+/* Clean six-item primary navigation */
+#mainNav{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:clamp(14px,1.7vw,26px);max-width:none;white-space:nowrap;font-size:14px;flex:1}
+#mainNav a{display:inline-flex;align-items:center;padding:12px 0;color:#294866;font-weight:700;border-bottom:3px solid transparent}
+#mainNav a:hover,#mainNav a.active{color:#0878c9}
+#mainNav a.active{border-bottom-color:#0878c9}
+#mainNav .nav-admin{display:inline-flex;border:1px solid #0878c9;border-radius:7px;padding:10px 14px;color:#0878c9}
+#mainNav .nav-admin:hover{background:#0878c9;color:#fff}
+.nav-wrap{gap:22px}
+.about{display:block!important}
+@media(max-width:1100px) and (min-width:761px){
+  .nav-wrap{gap:14px}
+  .caritas-logo{width:135px}
+  .brand-copy strong{font-size:19px}
+  .brand-copy small{font-size:13px}
+  #mainNav{gap:12px;font-size:12px}
+  #mainNav .nav-admin{padding:8px 9px}
+}
+@media(max-width:760px){
+  #mainNav{display:none;position:absolute;top:74px;left:0;right:0;max-width:none;white-space:normal;align-items:stretch;gap:0;flex-direction:column}
+  #mainNav.open{display:flex}
+  #mainNav a{display:block;padding:12px 14px;border-bottom:1px solid #edf2f7}
+  #mainNav .nav-admin{display:block;margin:8px 12px;text-align:center;border:1px solid #0878c9}
+}
