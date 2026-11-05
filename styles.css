@@ -153,3 +153,10 @@ footer{background:#082f57;padding-top:22px}
   #mainNav a{display:block;padding:12px 14px;border-bottom:1px solid #edf2f7}
   #mainNav .nav-admin{display:block;margin:8px 12px;text-align:center;border:1px solid #0878c9}
 }
+
+
+/* Footer logo: preserve the original blue logo and give it a clear white backing. */
+.footer-logo{filter:none!important;background:#fff;padding:7px 9px;border-radius:5px;object-fit:contain;max-height:72px}
+#publicContactDetails p{margin:4px 0;color:#d7e5f3;font-size:12px;overflow-wrap:anywhere}
+#publicContactDetails a{color:#fff;text-decoration:underline}
+#contactSettingsSection .admin-form{margin-top:16px}
