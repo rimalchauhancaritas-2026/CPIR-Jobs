@@ -1,6 +1,6 @@
 let client=null,editingId=null;const $=id=>document.getElementById(id);const ready=()=>window.CPIR_CONFIG?.SUPABASE_URL?.startsWith('https://')&&!window.CPIR_CONFIG.SUPABASE_URL.includes('PASTE_')&&window.CPIR_CONFIG.SUPABASE_ANON_KEY&&!window.CPIR_CONFIG.SUPABASE_ANON_KEY.includes('PASTE_');const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));function val(id){return $(id).value.trim()}function msg(id,t){$(id).textContent=t}
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);client.auth.onAuthStateChange(()=>setTimeout(checkSession,0));checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(session){const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');await loadAdminJobs();}}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(session){const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');await loadAdminJobs();await loadContactSettings();}}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();});$('signOutBtn').addEventListener('click',async()=>{await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';msg('formMessage','');}
 $('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),city:val('fCity'),area:val('fArea')||null,qualification:val('fQualification'),experience:val('fExperience')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:val('fDescription')||null,status:val('fStatus')};let result;if(editingId)result=await client.from('jobs').update(record).eq('id',editingId);else result=await client.from('jobs').insert(record);if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
@@ -8,3 +8,21 @@ async function loadAdminJobs(){const box=$('adminJobs');box.innerHTML='<p>Loadin
 function editJob(j){if(!j)return;editingId=j.id;const fields={fTitle:'title',fOrg:'organization',fCategory:'category',fCity:'city',fArea:'area',fQualification:'qualification',fExperience:'experience',fSalary:'salary',fDeadline:'deadline',fSource:'source',fSourceUrl:'source_url',fApplyUrl:'apply_url',fDescription:'description',fStatus:'status'};Object.entries(fields).forEach(([id,key])=>$(id).value=j[key]??'');$('editId').value=j.id;msg('formMessage','Editing existing listing.');window.scrollTo({top:0,behavior:'smooth'});}
 async function deleteJob(id){if(!confirm('Permanently delete this job listing?'))return;const {error}=await client.from('jobs').delete().eq('id',id);if(error)alert('Delete failed: '+error.message);else await loadAdminJobs();}
 init();
+
+// Contact details editor. Only authorized portal administrators can save changes.
+const contactFields={cEmail:'email',cPhone:'phone',cAddress:'address',cFacebook:'facebook_url',cInstagram:'instagram_url',cWebsite:'website_url',cExtra:'extra'};
+async function loadContactSettings(){
+  const {data,error}=await client.from('portal_contact').select('*').eq('id',1).maybeSingle();
+  if(error){msg('contactMessage','Could not load contact details. Please run portal-contact-setup.sql in Supabase first.');return;}
+  Object.entries(contactFields).forEach(([id,key])=>$(id).value=data?.[key]||'');
+  msg('contactMessage',data?'Saved contact details loaded.':'No contact details saved yet.');
+}
+$('contactForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const record={id:1};
+  Object.entries(contactFields).forEach(([id,key])=>record[key]=val(id)||null);
+  msg('contactMessage','Saving contact details…');
+  const {error}=await client.from('portal_contact').upsert(record,{onConflict:'id'});
+  msg('contactMessage',error?'Could not save: '+error.message:'Contact information saved. It will appear on the public website.');
+});
+$('refreshContactBtn')?.addEventListener('click',loadContactSettings);
