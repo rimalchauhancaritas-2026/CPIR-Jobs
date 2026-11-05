@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Your CV | Caritas Youth Jobs Portal</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header class="site-header"><div class="container nav-wrap">
+<a class="brand" href="index.html"><div class="brand-mark">✚</div><div class="brand-copy"><strong>Caritas Youth Jobs Portal</strong><small>Rawalpindi &amp; Islamabad</small></div></a>
+<button class="menu-btn" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+<nav id="mainNav"><a href="index.html">Home</a><a href="index.html#jobs">Jobs</a><a class="active" href="candidate.html">Create CV</a><a href="candidate.html#signup">Sign Up / Login</a></nav>
+</div></header>
+<main class="container candidate-page">
+<section class="candidate-intro"><p class="eyebrow">CAREER TOOLS</p><h1>Create your professional CV</h1><p>Register or sign in to build, save and download your CV. Your information is private and linked to your account.</p></section>
+<section id="signup" class="info-card candidate-auth">
+<div class="candidate-tabs"><button type="button" class="secondary-btn selected" id="showSignup">Create account</button><button type="button" class="secondary-btn" id="showLogin">Sign in</button></div>
+<form id="signupForm" class="admin-form"><h2>Candidate sign up</h2><label>Full name<input id="signupName" required maxlength="120" autocomplete="name"></label><label>Email address<input id="signupEmail" type="email" required autocomplete="email"></label><label>Password (at least 8 characters)<input id="signupPassword" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary-btn" type="submit">Create account</button><p id="signupMessage" role="status"></p><small>Supabase may send a confirmation email before you can sign in.</small></form>
+<form id="loginForm" class="admin-form hidden"><h2>Candidate sign in</h2><label>Email address<input id="loginEmail" type="email" required autocomplete="username"></label><label>Password<input id="loginPassword" type="password" required autocomplete="current-password"></label><button class="primary-btn" type="submit">Sign in</button><p id="loginMessage" role="status"></p><button type="button" class="text-btn" id="resetPassword">Forgot password?</button></form>
+</section>
+<section id="candidateDashboard" class="info-card hidden"><div class="section-heading"><div><p class="eyebrow">MY ACCOUNT</p><h2>My CV</h2><p id="candidateEmail"></p></div><button class="secondary-btn" id="candidateSignOut">Sign out</button></div>
+<form id="cvForm" class="admin-form">
+<h3>Personal information</h3><div class="form-grid">
+<label>Full name *<input id="cvName" required maxlength="120"></label><label>Email *<input id="cvEmail" type="email" required maxlength="254"></label><label>Phone number *<input id="cvPhone" type="tel" required maxlength="40" placeholder="+92..."></label><label>City<input id="cvCity" maxlength="80" placeholder="Rawalpindi / Islamabad"></label>
+<label>Address<textarea id="cvAddress" rows="2" maxlength="500"></textarea></label><label>LinkedIn / Portfolio URL<input id="cvWebsite" type="url" maxlength="500" placeholder="https://..."></label>
+</div>
+<h3>Professional profile</h3><label>Career objective / professional summary *<textarea id="cvSummary" rows="4" required maxlength="2000" placeholder="Briefly describe your career goals, strengths and experience."></textarea></label>
+<h3>Education</h3><label>Education details *<textarea id="cvEducation" rows="5" required maxlength="5000" placeholder="One qualification per line: Degree | Institution | Year | Grade"></textarea></label>
+<h3>Work experience</h3><label>Work experience<textarea id="cvExperience" rows="5" maxlength="5000" placeholder="One role per section: Job title | Organization | Dates | Responsibilities"></textarea></label>
+<h3>Skills and languages</h3><div class="form-grid"><label>Skills *<textarea id="cvSkills" rows="4" required maxlength="2000" placeholder="Communication, MS Office, teamwork..."></textarea></label><label>Languages<textarea id="cvLanguages" rows="4" maxlength="1000" placeholder="Urdu (Fluent), English (Good)..."></textarea></label><label>Certifications and training<textarea id="cvCertifications" rows="4" maxlength="2000"></textarea></label><label>References (optional)<textarea id="cvReferences" rows="4" maxlength="1500" placeholder="Name, designation, organization and contact (with their permission)"></textarea></label></div>
+<div class="admin-actions"><button class="primary-btn" type="submit">Save my CV</button><button class="secondary-btn" type="button" id="downloadCv">Download PDF</button><button class="secondary-btn" type="button" id="downloadWord">Download Word</button></div><p id="cvMessage" role="status"></p>
+</form></section>
+</main><footer><div class="copyright">© 2026 Caritas Pakistan Islamabad-Rawalpindi. All rights reserved.</div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="candidate.js"></script></body></html>
