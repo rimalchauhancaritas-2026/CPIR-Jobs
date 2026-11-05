@@ -17,7 +17,7 @@ function initCandidate(){
 }
 async function signup(e){e.preventDefault();say('signupMessage','Creating account…');
  const name=$('signupName').value.trim(),email=$('signupEmail').value.trim(),password=$('signupPassword').value;
- const {data,error}=await client.auth.signUp({email,password,options:{data:{full_name:name}}});
+ const {data,error}=await client.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:'https://rimalchauhancaritas-2026.github.io/CPIR-Jobs/candidate.html'}});
  if(error){say('signupMessage',error.message);return;}
  if(data.session){say('signupMessage','Account created. You are now signed in.');}
  else{say('signupMessage','Account created. Check your email for a confirmation link, then sign in.');}
