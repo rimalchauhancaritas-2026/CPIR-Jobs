@@ -13,3 +13,20 @@ function shareJob(){if(navigator.share)navigator.share({title:document.title,url
 async function loadPublicJobs(){const status=document.getElementById('resultCount');const result=await fetchJobs();if(result.error){jobsCache=[];renderJobs([]);if(status)status.textContent=result.error.message;return;}jobsCache=(result.data||[]).map(fromDb);renderJobs(jobsCache);}
 window.filterJobs=filterJobs;window.quickFilter=quickFilter;window.quickCity=quickCity;window.resetFilters=resetFilters;window.toggleMenu=toggleMenu;window.renderJobDetail=renderJobDetail;window.shareJob=shareJob;
 if(document.getElementById('jobsGrid'))loadPublicJobs();
+
+
+// Show administrator-managed Contact Us details in the public footer.
+async function loadPortalContact(){
+  const c=getClient(); if(!c)return;
+  const column=document.querySelector('footer .footer-grid > div:last-child');
+  if(!column)return;
+  column.innerHTML='<h4>Contact Us</h4><div id="publicContactDetails"><p>Contact details will be updated by the portal administrator.</p></div>';
+  const {data,error}=await c.from('portal_contact').select('*').eq('id',1).maybeSingle();
+  if(error||!data)return;
+  const box=document.getElementById('publicContactDetails'); if(!box)return;
+  const safeUrl=value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}};
+  const line=(label,value)=>value?'<p><strong>'+escapeHtml(value)+'</strong></p>':'';
+  const link=(label,value)=>{const url=safeUrl(value);return url?'<p><a href="'+escapeHtml(url)+'" target="_blank" rel="noopener noreferrer">'+label+'</a></p>':'';};
+  box.innerHTML=line('Email',data.email)+line('Phone',data.phone)+line('Address',data.address)+line('Information',data.extra)+link('Facebook',data.facebook_url)+link('Instagram',data.instagram_url)+link('Website',data.website_url);
+}
+loadPortalContact();
