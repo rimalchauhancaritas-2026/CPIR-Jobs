@@ -45,7 +45,7 @@ async function login(e){e.preventDefault();say('loginMessage','Signing in…');
 async function resetPassword(){const email=$('loginEmail').value.trim();if(!email){say('loginMessage','Enter your email address first.');return;}
  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
  say('loginMessage',error?error.message:'Password reset email requested. Check your inbox.');}
-async function showSession(session){currentUser=session?.user||null;$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);
+async function showSession(session){currentUser=session?.user||null;$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);setCandidateNavPhoto(null);
  if(!currentUser){photoPath=null;photoDataUrl=null;return;}
  $('candidateEmail').textContent=currentUser.email||'';
  await loadAlertPreferences();
@@ -55,7 +55,7 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  Object.entries(map).forEach(([id,key])=>$(id).value=data[key]||'');
  loadRepeaters(data);
  photoPath=data.photo_path||null;
- if(photoPath)await loadSavedPhoto(photoPath);
+ if(photoPath)await loadSavedPhoto(photoPath);else setPhotoPreview(null);
  }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';loadRepeaters({});setPhotoPreview(null);}
  updateProfileProgress();
 }
