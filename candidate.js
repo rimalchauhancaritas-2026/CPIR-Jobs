@@ -59,10 +59,10 @@ function openPhotoCrop(e){
  if(file.size>3*1024*1024){say('photoMessage','The photograph must be smaller than 3 MB.');return;}
  if(!window.Cropper){say('photoMessage','The photo editor could not load. Please refresh and try again.');return;}
  const reader=new FileReader();reader.onload=()=>{$('cropImage').src=reader.result;$('cropModal').classList.remove('hidden');if(cropper){cropper.destroy();cropper=null;}
- cropper=new Cropper($('cropImage'),{aspectRatio:1,viewMode:1,dragMode:'move',autoCropArea:.88, responsive:true,background:false,zoomOnWheel:true, movable:true,rotatable:false,scalable:false});};reader.readAsDataURL(file);
+ cropper=new Cropper($('cropImage'),{aspectRatio:NaN,viewMode:1,dragMode:'move',autoCropArea:.88, responsive:true,background:false,zoomOnWheel:true, movable:true,rotatable:false,scalable:false});};reader.readAsDataURL(file);
 }
 function closeCrop(){$('cropModal').classList.add('hidden');if(cropper){cropper.destroy();cropper=null;}}
-function applyCrop(){if(!cropper)return;const canvas=cropper.getCroppedCanvas({width:600,height:600,fillColor:'#ffffff',imageSmoothingEnabled:true,imageSmoothingQuality:'high'});if(!canvas){say('photoMessage','Could not crop this image. Please try another photograph.');return;}
+function applyCrop(){if(!cropper)return;const canvas=cropper.getCroppedCanvas({maxWidth:1200,maxHeight:1200,fillColor:'#ffffff',imageSmoothingEnabled:true,imageSmoothingQuality:'high'});if(!canvas){say('photoMessage','Could not crop this image. Please try another photograph.');return;}
  photoDataUrl=canvas.toDataURL('image/jpeg',.88);removePhotoRequested=false;setPhotoPreview(photoDataUrl);say('photoMessage','Photograph cropped. Save your CV to keep the changes.');closeCrop();}
 function removePhoto(){photoDataUrl=null;removePhotoRequested=true;setPhotoPreview(null);say('photoMessage','Photograph will be removed when you save your CV.');}
 function dataUrlToBlob(dataUrl){const parts=dataUrl.split(','),mime=parts[0].match(/:(.*?);/)[1],binary=atob(parts[1]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:mime});}
