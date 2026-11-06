@@ -183,3 +183,5 @@ footer{background:#082f57;padding-top:22px}
 .crop-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;justify-content:flex-end}
 .crop-controls button{padding:10px 13px}
 @media(max-width:500px){.crop-dialog{padding:15px}.crop-controls{justify-content:stretch}.crop-controls button{flex:1}}
+
+#cropModal.hidden{display:none!important}
