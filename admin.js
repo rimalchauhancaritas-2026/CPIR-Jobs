@@ -46,3 +46,83 @@ async function loadCandidateUsers(){
  }));
 }
 if($('refreshUsersBtn'))$('refreshUsersBtn').addEventListener('click',loadCandidateUsers);
+
+
+// Excel bulk import: preview and validate workbook rows before inserting as drafts.
+let excelImportRows=[];
+const excelHeaders=['title','organization','category','city','area','qualification','experience','salary','deadline','source','source_url','apply_url','description'];
+const normalizeExcelHeader=s=>String(s??'').trim().toLowerCase().replace(/[ _-]+/g,'');
+function excelDate(value){
+ if(value===null||value===undefined||value==='')return null;
+ if(value instanceof Date&&!isNaN(value))return value.toISOString().slice(0,10);
+ if(typeof value==='number'&&window.XLSX?.SSF)return XLSX.SSF.format('yyyy-mm-dd',value);
+ const d=new Date(String(value));return isNaN(d)?null:d.toISOString().slice(0,10);
+}
+function excelCell(row,key){const found=Object.keys(row).find(k=>normalizeExcelHeader(k)===normalizeExcelHeader(key));return found===undefined?'':String(row[found]??'').trim();}
+function normalizeCategory(v){
+ const s=String(v||'').trim().toLowerCase();
+ if(s.includes('government')||s.includes('govt'))return 'Government';
+ if(s.includes('private'))return 'Private';
+ if(s.includes('news')||s.includes('newspaper'))return 'Newspaper';
+ if(s.includes('intern'))return 'Internship';
+ if(s.includes('ngo')||s.includes('development'))return 'NGO / Development';
+ return '';
+}
+function normalizeCity(v){
+ const s=String(v||'').trim().toLowerCase();
+ if(s.includes('islamabad'))return 'Islamabad';
+ if(s.includes('rawalpindi')||s==='pindi')return 'Rawalpindi';
+ return '';
+}
+function makeExcelTemplate(){
+ const rows=[['title','organization','category','city','area','qualification','experience','salary','deadline','source','source_url','apply_url','description'],
+ ['Assistant (BPS-15)','Example Department','Government','Islamabad','G-5',"Bachelor's",'2 Years','','2026-12-31','National Jobs Portal','https://njp.gov.pk/jobs/','https://njp.gov.pk/jobs/','Paste the verified job description here']];
+ const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Jobs');XLSX.writeFile(wb,'Caritas-Jobs-Import-Template.xlsx');
+}
+$('downloadExcelTemplate')?.addEventListener('click',()=>{if(!window.XLSX){msg('excelImportMessage','Excel library is still loading. Refresh and try again.');return;}makeExcelTemplate();});
+$('jobsExcelFile')?.addEventListener('change',async e=>{
+ const file=e.target.files?.[0];excelImportRows=[];$('excelPreview').innerHTML='';$('importExcelJobs').classList.add('hidden');$('importExcelJobs').disabled=true;
+ if(!file)return;
+ if(!window.XLSX){msg('excelImportMessage','Excel reader could not load. Check your internet connection and refresh.');return;}
+ try{
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+  const sheet=wb.Sheets.Jobs||wb.Sheets[wb.SheetNames[0]];
+  if(!sheet)throw new Error('The workbook has no worksheet.');
+  const raw=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:true});
+  if(!raw.length)throw new Error('No job rows were found. Put column headings in the first row.');
+  const seen=new Set();
+  excelImportRows=raw.map((r,i)=>{
+   const rec={};excelHeaders.forEach(k=>rec[k]=excelCell(r,k)||null);
+   rec.category=normalizeCategory(rec.category);rec.city=normalizeCity(rec.city);rec.deadline=excelDate(r[Object.keys(r).find(k=>normalizeExcelHeader(k)==='deadline')]);
+   rec.status='draft';
+   const errors=[];
+   if(!rec.title)errors.push('Missing title');if(!rec.organization)errors.push('Missing organization');
+   if(!rec.category)errors.push('Category must be Government, Private, Newspaper, Internship or NGO / Development');
+   if(!rec.city)errors.push('City must be Islamabad or Rawalpindi');if(!rec.qualification)errors.push('Missing qualification');
+   if(rec.deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(rec.deadline))errors.push('Invalid deadline');
+   const key=rec.source_url||((rec.title||'').toLowerCase()+'|'+(rec.organization||'').toLowerCase());
+   if(seen.has(key))errors.push('Duplicate row in this workbook');seen.add(key);
+   return {record:rec,row:i+2,errors};
+  });
+  const good=excelImportRows.filter(x=>!x.errors.length).length;
+  msg('excelImportMessage',`Read ${raw.length} rows: ${good} valid, ${raw.length-good} need correction. All imports will be Draft.`);
+  $('excelPreview').innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th>Excel row</th><th>Job title</th><th>Organization</th><th>City</th><th>Check</th></tr></thead><tbody>'+excelImportRows.map(x=>'<tr><td>'+x.row+'</td><td>'+esc(x.record.title||'—')+'</td><td>'+esc(x.record.organization||'—')+'</td><td>'+esc(x.record.city||'—')+'</td><td style="color:'+(x.errors.length?'#b42318':'#16803c')+'">'+esc(x.errors.join('; ')||'Ready')+'</td></tr>').join('')+'</tbody></table></div>';
+  $('importExcelJobs').classList.remove('hidden');$('importExcelJobs').disabled=good===0;
+ }catch(err){msg('excelImportMessage','Could not read workbook: '+err.message);}
+});
+$('importExcelJobs')?.addEventListener('click',async()=>{
+ if(!client)return;
+ const valid=excelImportRows.filter(x=>!x.errors.length).map(x=>x.record);
+ if(!valid.length)return;
+ if(!confirm('Import '+valid.length+' valid job(s) as Draft? They will not appear publicly until you publish them.'))return;
+ $('importExcelJobs').disabled=true;msg('excelImportMessage','Checking existing listings and importing…');
+ const urls=valid.map(x=>x.source_url).filter(Boolean);
+ let existing=[];
+ if(urls.length){const {data,error}=await client.from('jobs').select('source_url').in('source_url',urls);if(error){msg('excelImportMessage','Could not check duplicates: '+error.message);$('importExcelJobs').disabled=false;return;}existing=(data||[]).map(x=>x.source_url);}
+ const fresh=valid.filter(x=>!x.source_url||!existing.includes(x.source_url));
+ if(!fresh.length){msg('excelImportMessage','No new jobs imported: all valid source links already exist in the portal.');return;}
+ const {error}=await client.from('jobs').insert(fresh);
+ if(error){msg('excelImportMessage','Import failed: '+error.message);$('importExcelJobs').disabled=false;return;}
+ msg('excelImportMessage',`Successfully imported ${fresh.length} job(s) as Draft. ${valid.length-fresh.length} existing source link(s) were skipped.`);
+ $('jobsExcelFile').value='';$('excelPreview').innerHTML='';excelImportRows=[];await loadAdminJobs();
+});
