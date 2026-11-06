@@ -219,3 +219,17 @@ footer{background:#082f57;padding-top:22px}
  .nav-wrap>.brand .brand-copy small{font-size:10px}
  #mainNav{top:74px}
 }
+
+
+/* Shared scenic mountain banner across the portal */
+:root{--portal-scenic:url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=85")}
+.hero{background:linear-gradient(90deg,rgba(3,42,78,.76),rgba(3,63,104,.34)),var(--portal-scenic) center 48%/cover no-repeat!important}
+.hero-landscape{background:transparent!important}
+.hero-landscape:before,.hero-landscape:after,.hero-landscape .hill,.hero-landscape .mosque{display:none!important}
+.detail-hero{background:linear-gradient(90deg,rgba(3,42,78,.78),rgba(3,63,104,.38)),var(--portal-scenic) center 48%/cover no-repeat!important}
+.candidate-intro{position:relative;isolation:isolate;overflow:hidden;border-radius:14px;padding:34px 30px!important;margin:26px 0!important;color:#fff!important;background:linear-gradient(90deg,rgba(3,42,78,.82),rgba(3,63,104,.42)),var(--portal-scenic) center 48%/cover no-repeat!important}
+.candidate-intro .eyebrow,.candidate-intro h1,.candidate-intro p{color:#fff!important}
+.admin-page{background:linear-gradient(180deg,rgba(235,244,251,.9),rgba(246,249,252,.98)),var(--portal-scenic) center top/100% 330px no-repeat!important}
+.admin-page>.container>.section-heading{background:linear-gradient(90deg,rgba(3,42,78,.82),rgba(3,63,104,.4)),var(--portal-scenic) center 48%/cover no-repeat;border-radius:14px;padding:26px 30px;color:#fff}
+.admin-page>.container>.section-heading h1,.admin-page>.container>.section-heading .eyebrow{color:#fff}
+@media(max-width:760px){.candidate-intro{padding:24px 18px!important}.admin-page>.container>.section-heading{padding:20px}}
