@@ -83,7 +83,7 @@ async function loadSavedPhoto(path){
  if(error){say('photoMessage','Your saved photograph could not be loaded. You can upload it again.');return;}
  try{const response=await fetch(data.signedUrl);if(!response.ok)throw new Error('Image unavailable');const blob=await response.blob();photoDataUrl=await blobToDataUrl(blob);setPhotoPreview(photoDataUrl);}catch(_){say('photoMessage','Your saved photograph could not be previewed. You can upload it again.');}
 }
-function setPhotoPreview(src){const img=$('photoPreview'),placeholder=$('photoPlaceholder');if(src){img.src=src;img.classList.remove('hidden');placeholder.classList.add('hidden');$('removePhoto').disabled=false;}else{img.removeAttribute('src');img.classList.add('hidden');placeholder.classList.remove('hidden');$('removePhoto').disabled=true;}}
+function setCandidateNavPhoto(src){const link=$('authNavLink'),img=$('authNavAvatar'),placeholder=$('authNavPlaceholder'),label=$('authNavText');if(!link)return;link.href=currentUser?'candidate.html#candidateDashboard':'candidate.html#signup';if(label)label.textContent=currentUser?'Profile':'Sign Up / Login';if(src){img.src=src;img.classList.remove('hidden');placeholder?.classList.add('hidden');}else{img?.removeAttribute('src');img?.classList.add('hidden');placeholder?.classList.remove('hidden');}}\nfunction setPhotoPreview(src){const img=$('photoPreview'),placeholder=$('photoPlaceholder');if(src){img.src=src;img.classList.remove('hidden');placeholder.classList.add('hidden');$('removePhoto').disabled=false;}else{img.removeAttribute('src');img.classList.add('hidden');placeholder.classList.remove('hidden');$('removePhoto').disabled=true;}setCandidateNavPhoto(src);}
 function openPhotoCrop(e){
  const file=e.target.files?.[0];e.target.value='';
  if(!file)return;
