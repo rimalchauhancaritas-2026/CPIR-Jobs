@@ -1,6 +1,14 @@
 let client=null,currentUser=null,cropper=null,photoDataUrl=null,photoPath=null,removePhotoRequested=false;
 const $=id=>document.getElementById(id);
 const say=(id,msg)=>{if($(id))$(id).textContent=msg;};
+function updateProfileProgress(){
+ const requiredIds=['cvName','cvEmail','cvPhone','cvSummary','cvEducation','cvSkills'];
+ const completed=requiredIds.filter(id=>$(id)?.value.trim()).length;
+ const percent=Math.round(completed/requiredIds.length*100);
+ if($('profileProgressValue'))$('profileProgressValue').textContent=percent+'%';
+ if($('profileProgressBar'))$('profileProgressBar').style.width=percent+'%';
+ if($('profileProgressText'))$('profileProgressText').textContent=percent===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':completed+' of '+requiredIds.length+' required profile items completed. Complete the remaining sections to finish your CV.';
+}
 function initCandidate(){
  if(!window.supabase||!window.CPIR_CONFIG?.SUPABASE_URL||!window.CPIR_CONFIG?.SUPABASE_ANON_KEY){say('signupMessage','Supabase configuration is missing.');return;}
  client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);
@@ -10,7 +18,7 @@ function initCandidate(){
  $('loginForm').addEventListener('submit',login);
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
  $('resetPassword').onclick=resetPassword;
- $('cvForm').addEventListener('submit',saveCv);
+ $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',updateProfileProgress);
  $('downloadCv').onclick=downloadCv; $('downloadWord').onclick=downloadWord;
  $('photoInput').addEventListener('change',openPhotoCrop);
  $('removePhoto').addEventListener('click',removePhoto);
@@ -45,6 +53,7 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  photoPath=data.photo_path||null;
  if(photoPath)await loadSavedPhoto(photoPath);
  }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';setPhotoPreview(null);}
+ updateProfileProgress();
 }
 async function loadSavedPhoto(path){
  const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);
@@ -78,7 +87,7 @@ async function saveCv(e){e.preventDefault();if(!currentUser)return;
  if(error){say('cvMessage','Could not save CV: '+error.message);return;}
  photoPath=nextPhotoPath;removePhotoRequested=false;
  const {error:profileError}=await client.from('profiles').upsert({user_id:currentUser.id,full_name:record.full_name,email:record.email,phone:record.phone,city:record.city,updated_at:new Date().toISOString()},{onConflict:'user_id'});
- say('cvMessage',profileError?'CV saved, but profile details could not be updated: '+profileError.message:'Your CV and photograph have been saved securely.');
+ say('cvMessage',profileError?'CV saved, but profile details could not be updated: '+profileError.message:'Your CV and photograph have been saved securely.');updateProfileProgress();
 }
 function cvHeaderHtml(esc,val){return (photoDataUrl?'<img class="cv-photo" src="'+photoDataUrl+'" alt="Profile photograph">':'')+'<h1>'+esc(val('cvName'))+'</h1><p class="contact">'+esc(val('cvEmail'))+' · '+esc(val('cvPhone'))+' · '+esc(val('cvCity'))+'<br>'+esc(val('cvAddress'))+'<br>'+esc(val('cvWebsite'))+'</p>';}
 function cvSections(esc,val){const fields=[['Professional Profile','cvSummary'],['Education','cvEducation'],['Work Experience','cvExperience'],['Skills','cvSkills'],['Languages','cvLanguages'],['Certifications & Training','cvCertifications'],['References','cvReferences']];return fields.map(([title,id])=>val(id)?'<h2>'+title+'</h2><p>'+esc(val(id)).replace(/\n/g,'<br>')+'</p>':'').join('');}
