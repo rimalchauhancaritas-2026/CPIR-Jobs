@@ -1,14 +1,13 @@
 let client=null,currentUser=null,cropper=null,photoDataUrl=null,photoPath=null,removePhotoRequested=false;
 const $=id=>document.getElementById(id);
 const say=(id,msg)=>{if($(id))$(id).textContent=msg;};
-function updateProfileProgress(){
- const requiredIds=['cvName','cvEmail','cvPhone','cvSummary','cvEducation','cvSkills'];
- const completed=requiredIds.filter(id=>$(id)?.value.trim()).length;
- const percent=Math.round(completed/requiredIds.length*100);
- if($('profileProgressValue'))$('profileProgressValue').textContent=percent+'%';
- if($('profileProgressBar'))$('profileProgressBar').style.width=percent+'%';
- if($('profileProgressText'))$('profileProgressText').textContent=percent===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':completed+' of '+requiredIds.length+' required profile items completed. Complete the remaining sections to finish your CV.';
-}
+const repeatConfig={educationEntries:{label:'Qualification',min:3,placeholder:'Degree | Institution | Year | Grade'},experienceEntries:{label:'Experience',min:3,placeholder:'Job title | Organization | Dates | Responsibilities'},skillsEntries:{label:'Skill',min:3,placeholder:'Communication, MS Office, teamwork'},languageEntries:{label:'Language',min:2,placeholder:'Urdu — Fluent'},trainingEntries:{label:'Certificate / Training',min:2,placeholder:'Course | Institute | Year'},referenceEntries:{label:'Reference',min:1,placeholder:'Name | Designation | Organization | Contact'}};
+function parseEntries(value){if(!value)return [];try{const parsed=JSON.parse(value);if(Array.isArray(parsed))return parsed.map(v=>String(v||''));}catch(e){}return String(value).trim()?[String(value)]:[];}
+function repeatValues(id){return [...($(id)?.querySelectorAll('textarea')||[])].map(x=>x.value.trim()).filter(Boolean);}
+function renderRepeater(id,values=[]){const box=$(id),cfg=repeatConfig[id];if(!box||!cfg)return;const items=[...values];while(items.length<cfg.min)items.push('');box.innerHTML='';items.forEach((value,index)=>{const card=document.createElement('div');card.className='repeatable-entry';const head=document.createElement('div');head.className='entry-heading';const title=document.createElement('span');title.textContent=cfg.label+' '+(index+1);head.appendChild(title);if(items.length>cfg.min){const del=document.createElement('button');del.type='button';del.className='entry-remove';del.textContent='Remove';del.dataset.removeEntry=id;del.dataset.index=index;head.appendChild(del);}const label=document.createElement('label');label.textContent=cfg.label+' details';const area=document.createElement('textarea');area.rows=3;area.maxLength=2500;area.placeholder=cfg.placeholder;area.value=value;label.appendChild(area);card.append(head,label);box.appendChild(card);});}
+function collectRepeaters(){return Object.fromEntries(Object.keys(repeatConfig).map(id=>[id,JSON.stringify(repeatValues(id))]));}
+function loadRepeaters(data){const keys={educationEntries:'education',experienceEntries:'experience',skillsEntries:'skills',languageEntries:'languages',trainingEntries:'certifications',referenceEntries:'references_text'};Object.entries(keys).forEach(([id,key])=>renderRepeater(id,parseEntries(data?.[key]||'')));}
+function updateProfileProgress(){const ids=['cvName','cvEmail','cvPhone','cvSummary'];const done=ids.filter(id=>$(id)?.value.trim()).length+(repeatValues('educationEntries').length?1:0)+(repeatValues('skillsEntries').length?1:0);const total=ids.length+2;const pct=Math.round(done/total*100);if($('profileProgressValue'))$('profileProgressValue').textContent=pct+'%';if($('profileProgressBar'))$('profileProgressBar').style.width=pct+'%';if($('profileProgressText'))$('profileProgressText').textContent=pct===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':done+' of '+total+' required profile items completed. Complete the remaining sections to finish your CV.';}
 function initCandidate(){
  if(!window.supabase||!window.CPIR_CONFIG?.SUPABASE_URL||!window.CPIR_CONFIG?.SUPABASE_ANON_KEY){say('signupMessage','Supabase configuration is missing.');return;}
  client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);
@@ -19,6 +18,8 @@ function initCandidate(){
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
  $('resetPassword').onclick=resetPassword;
  $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',updateProfileProgress);
+ $('cvForm').addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const id=add.dataset.add;renderRepeater(id,[...repeatValues(id),'']);updateProfileProgress();return;}const del=e.target.closest('[data-remove-entry]');if(del){const id=del.dataset.removeEntry,values=[...($(id)?.querySelectorAll('textarea')||[])].map(x=>x.value);values.splice(Number(del.dataset.index),1);renderRepeater(id,values);updateProfileProgress();}});
+ Object.keys(repeatConfig).forEach(id=>renderRepeater(id));
  $('downloadCv').onclick=downloadCv; $('downloadWord').onclick=downloadWord;
  $('photoInput').addEventListener('change',openPhotoCrop);
  $('removePhoto').addEventListener('click',removePhoto);
@@ -48,11 +49,12 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  $('candidateEmail').textContent=currentUser.email||'';
  const {data,error}=await client.from('cv_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
  if(error){say('cvMessage','Could not load saved CV: '+error.message);return;}
- if(data){const map={cvName:'full_name',cvEmail:'email',cvPhone:'phone',cvCity:'city',cvAddress:'address',cvWebsite:'website',cvSummary:'summary',cvEducation:'education',cvExperience:'experience',cvSkills:'skills',cvLanguages:'languages',cvCertifications:'certifications',cvReferences:'references_text'};
+ if(data){const map={cvName:'full_name',cvEmail:'email',cvPhone:'phone',cvCity:'city',cvAddress:'address',cvWebsite:'website',cvSummary:'summary'};
  Object.entries(map).forEach(([id,key])=>$(id).value=data[key]||'');
+ loadRepeaters(data);
  photoPath=data.photo_path||null;
  if(photoPath)await loadSavedPhoto(photoPath);
- }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';setPhotoPreview(null);}
+ }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';loadRepeaters({});setPhotoPreview(null);}
  updateProfileProgress();
 }
 async function loadSavedPhoto(path){
@@ -77,12 +79,15 @@ function removePhoto(){photoDataUrl=null;removePhotoRequested=true;setPhotoPrevi
 function dataUrlToBlob(dataUrl){const parts=dataUrl.split(','),mime=parts[0].match(/:(.*?);/)[1],binary=atob(parts[1]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:mime});}
 function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});}
 async function saveCv(e){e.preventDefault();if(!currentUser)return;
+ if(!repeatValues('educationEntries').length){say('cvMessage','Please add at least one education qualification before saving.');return;}
+ if(!repeatValues('skillsEntries').length){say('cvMessage','Please add at least one skill before saving.');return;}
  say('cvMessage','Saving your CV…');
  let nextPhotoPath=photoPath;
  if(photoDataUrl){const blob=dataUrlToBlob(photoDataUrl),path=currentUser.id+'/profile.jpg';const {error:uploadError}=await client.storage.from('candidate-photos').upload(path,blob,{contentType:'image/jpeg',upsert:true});
  if(uploadError){say('cvMessage','Could not upload photograph: '+uploadError.message);return;}nextPhotoPath=path;
  }else if(removePhotoRequested&&photoPath){const {error:removeError}=await client.storage.from('candidate-photos').remove([photoPath]);if(removeError){say('cvMessage','Could not remove photograph: '+removeError.message);return;}nextPhotoPath=null;}
- const record={user_id:currentUser.id,full_name:$('cvName').value.trim(),email:$('cvEmail').value.trim(),phone:$('cvPhone').value.trim(),city:$('cvCity').value.trim(),address:$('cvAddress').value.trim(),website:$('cvWebsite').value.trim(),summary:$('cvSummary').value.trim(),education:$('cvEducation').value.trim(),experience:$('cvExperience').value.trim(),skills:$('cvSkills').value.trim(),languages:$('cvLanguages').value.trim(),certifications:$('cvCertifications').value.trim(),references_text:$('cvReferences').value.trim(),photo_path:nextPhotoPath,updated_at:new Date().toISOString()};
+ const repeated=collectRepeaters();
+ const record={user_id:currentUser.id,full_name:$('cvName').value.trim(),email:$('cvEmail').value.trim(),phone:$('cvPhone').value.trim(),city:$('cvCity').value.trim(),address:$('cvAddress').value.trim(),website:$('cvWebsite').value.trim(),summary:$('cvSummary').value.trim(),education:repeated.educationEntries,experience:repeated.experienceEntries,skills:repeated.skillsEntries,languages:repeated.languageEntries,certifications:repeated.trainingEntries,references_text:repeated.referenceEntries,photo_path:nextPhotoPath,updated_at:new Date().toISOString()}
  const {error}=await client.from('cv_profiles').upsert(record,{onConflict:'user_id'});
  if(error){say('cvMessage','Could not save CV: '+error.message);return;}
  photoPath=nextPhotoPath;removePhotoRequested=false;
@@ -90,7 +95,11 @@ async function saveCv(e){e.preventDefault();if(!currentUser)return;
  say('cvMessage',profileError?'CV saved, but profile details could not be updated: '+profileError.message:'Your CV and photograph have been saved securely.');updateProfileProgress();
 }
 function cvHeaderHtml(esc,val){return (photoDataUrl?'<img class="cv-photo" src="'+photoDataUrl+'" alt="Profile photograph">':'')+'<h1>'+esc(val('cvName'))+'</h1><p class="contact">'+esc(val('cvEmail'))+' · '+esc(val('cvPhone'))+' · '+esc(val('cvCity'))+'<br>'+esc(val('cvAddress'))+'<br>'+esc(val('cvWebsite'))+'</p>';}
-function cvSections(esc,val){const fields=[['Professional Profile','cvSummary'],['Education','cvEducation'],['Work Experience','cvExperience'],['Skills','cvSkills'],['Languages','cvLanguages'],['Certifications & Training','cvCertifications'],['References','cvReferences']];return fields.map(([title,id])=>val(id)?'<h2>'+title+'</h2><p>'+esc(val(id)).replace(/\n/g,'<br>')+'</p>':'').join('');}
+function cvSections(esc,val){
+ const profile=val('cvSummary')?'<h2>Professional Profile</h2><p>'+esc(val('cvSummary')).replace(/\\n/g,'<br>')+'</p>':'';
+ const groups=[['Education','educationEntries'],['Work Experience','experienceEntries'],['Skills','skillsEntries'],['Languages','languageEntries'],['Certifications & Training','trainingEntries'],['References','referenceEntries']];
+ return profile+groups.map(([title,id])=>{const items=repeatValues(id);return items.length?'<h2>'+title+'</h2>'+items.map(item=>'<p>'+esc(item).replace(/\\n/g,'<br>')+'</p>').join(''):'';}).join('');
+}
 function downloadCv(){if(!currentUser){say('cvMessage','Please sign in first.');return;}
  const val=id=>$(id).value.trim(),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const sections=cvSections(esc,val),header=cvHeaderHtml(esc,val);
