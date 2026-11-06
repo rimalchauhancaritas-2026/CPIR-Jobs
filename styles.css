@@ -233,3 +233,23 @@ footer{background:#082f57;padding-top:22px}
 .admin-page>.container>.section-heading{background:linear-gradient(90deg,rgba(3,42,78,.82),rgba(3,63,104,.4)),var(--portal-scenic) center 48%/cover no-repeat;border-radius:14px;padding:26px 30px;color:#fff}
 .admin-page>.container>.section-heading h1,.admin-page>.container>.section-heading .eyebrow{color:#fff}
 @media(max-width:760px){.candidate-intro{padding:24px 18px!important}.admin-page>.container>.section-heading{padding:20px}}
+
+
+/* Candidate CV Manager: guided sections and profile completion */
+.profile-progress-card{border:1px solid #dce7f2;border-radius:13px;background:#f8fbfe;padding:18px 20px;margin:18px 0}
+.progress-heading{display:flex;justify-content:space-between;gap:12px;color:#17365d;margin-bottom:10px}
+.profile-progress-track{height:10px;border-radius:20px;background:#e2ebf3;overflow:hidden}
+.profile-progress-track span{display:block;height:100%;width:0;background:linear-gradient(90deg,#0878c9,#16a078);border-radius:20px;transition:width .2s}
+.profile-progress-card p{font-size:13px;color:#526b82;margin:9px 0 4px}
+.profile-progress-card small{color:#718397}
+.cv-step-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 22px;padding:12px;background:#f1f6fa;border:1px solid #dce7f2;border-radius:12px}
+.cv-step-nav a{display:inline-flex;text-decoration:none;color:#075b9d;font-size:12px;font-weight:800;padding:9px 12px;border-radius:8px;background:#fff;border:1px solid #d7e3ec}
+.cv-step-nav a:hover{background:#eaf5fc;border-color:#9bc8e8}
+.cv-section{scroll-margin-top:100px;padding:20px 0;border-bottom:1px solid #e7edf3}
+.cv-section:last-child{border-bottom:0}
+.cv-section-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:16px}
+.cv-section-heading>span{display:grid;place-items:center;flex:0 0 38px;height:38px;border-radius:10px;background:#eaf5fc;color:#075b9d;font-weight:900}
+.cv-section-heading h3{margin:0!important;color:#123d61}
+.cv-section-heading p{margin:4px 0 0;color:#718397;font-size:13px}
+.candidate-page .cv-section>label{margin-top:12px}
+@media(max-width:600px){.cv-step-nav{gap:6px}.cv-step-nav a{padding:8px 9px;font-size:11px}.profile-progress-card{padding:15px}}
