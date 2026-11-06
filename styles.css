@@ -164,3 +164,22 @@ footer{background:#082f57;padding-top:22px}
 /* Candidate account and CV builder */
 .candidate-page{padding:42px 0 70px;max-width:980px}.candidate-intro{padding:20px 0 26px}.candidate-intro h1{font:800 clamp(28px,4vw,42px) Manrope,sans-serif;color:var(--navy);margin:4px 0}.candidate-intro p{color:var(--muted);max-width:720px}.candidate-auth,.candidate-page .info-card{padding:28px;margin:18px 0;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 8px 28px #082f550d}.candidate-tabs{display:flex;gap:10px;margin-bottom:18px}.candidate-tabs .selected{background:#eaf5fc;border-color:#0878c9;color:#075b9d}.candidate-page .admin-form{display:grid;gap:14px}.candidate-page .admin-form h2,.candidate-page .admin-form h3{color:var(--navy);margin:12px 0 0}.candidate-page .admin-form label{display:grid;gap:6px;font-weight:700;color:#294866}.candidate-page .admin-form input,.candidate-page .admin-form textarea{width:100%;padding:11px 12px;border:1px solid #d7e3ec;border-radius:8px;color:var(--ink);background:#fff}.candidate-page .admin-form textarea{resize:vertical}.candidate-page .admin-form input:focus,.candidate-page .admin-form textarea:focus{outline:2px solid #b7def6;border-color:#0878c9}.candidate-page .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.candidate-page .section-heading{display:flex;align-items:center;justify-content:space-between;gap:15px}.candidate-page .hidden{display:none!important}
 @media(max-width:650px){.candidate-page .form-grid{grid-template-columns:1fr}.candidate-auth,.candidate-page .info-card{padding:18px}.candidate-page .section-heading{align-items:flex-start;flex-direction:column}}
+
+/* Candidate CV photograph upload and crop dialog */
+.photo-upload-panel{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:15px;border:1px solid #dce7f2;border-radius:12px;background:#f8fbfd}
+.photo-preview-wrap{width:150px;height:150px;border:1px dashed #a9bfd2;border-radius:10px;display:grid;place-items:center;overflow:hidden;background:#edf4f9}
+.photo-preview{width:100%;height:100%;object-fit:cover}
+.photo-placeholder{text-align:center;color:#72869a;font-size:12px;padding:12px}
+.photo-upload-controls{display:grid;gap:8px;min-width:220px}
+.photo-upload-controls small{color:#718397}
+.photo-upload-controls input{max-width:280px}
+.photo-upload-controls button{justify-self:start}
+.crop-modal{position:fixed;inset:0;z-index:1000;background:#071d32cc;display:flex;align-items:center;justify-content:center;padding:18px}
+.crop-dialog{width:min(680px,100%);background:#fff;border-radius:15px;padding:22px;box-shadow:0 20px 60px #0005}
+.crop-dialog h2{margin:0;color:#082f55}
+.crop-dialog p{color:#61758a;margin:6px 0 16px}
+.crop-image-wrap{height:min(58vh,460px);background:#eaf0f5;overflow:hidden}
+.crop-image-wrap img{display:block;max-width:100%;max-height:100%}
+.crop-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;justify-content:flex-end}
+.crop-controls button{padding:10px 13px}
+@media(max-width:500px){.crop-dialog{padding:15px}.crop-controls{justify-content:stretch}.crop-controls button{flex:1}}
