@@ -17,6 +17,7 @@ function initCandidate(){
  $('loginForm').addEventListener('submit',login);
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
  $('resetPassword').onclick=resetPassword;
+ $('saveAlertPreferences').onclick=saveAlertPreferences;
  $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',updateProfileProgress);
  $('cvForm').addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const id=add.dataset.add;renderRepeater(id,[...repeatValues(id),'']);updateProfileProgress();return;}const del=e.target.closest('[data-remove-entry]');if(del){const id=del.dataset.removeEntry,values=[...($(id)?.querySelectorAll('textarea')||[])].map(x=>x.value);values.splice(Number(del.dataset.index),1);renderRepeater(id,values);updateProfileProgress();}});
  Object.keys(repeatConfig).forEach(id=>renderRepeater(id));
@@ -47,6 +48,7 @@ async function resetPassword(){const email=$('loginEmail').value.trim();if(!emai
 async function showSession(session){currentUser=session?.user||null;$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);
  if(!currentUser){photoPath=null;photoDataUrl=null;return;}
  $('candidateEmail').textContent=currentUser.email||'';
+ await loadAlertPreferences();
  const {data,error}=await client.from('cv_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
  if(error){say('cvMessage','Could not load saved CV: '+error.message);return;}
  if(data){const map={cvName:'full_name',cvEmail:'email',cvPhone:'phone',cvCity:'city',cvAddress:'address',cvWebsite:'website',cvSummary:'summary'};
@@ -57,6 +59,25 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';loadRepeaters({});setPhotoPreview(null);}
  updateProfileProgress();
 }
+
+async function loadAlertPreferences(){
+ const {data,error}=await client.from('job_alert_preferences').select('*').eq('user_id',currentUser.id).maybeSingle();
+ if(error){say('alertPreferencesMessage','Could not load alert preferences: '+error.message);return;}
+ const p=data||{enabled:false,categories:[],cities:[],employment_types:[]};
+ $('alertsEnabled').checked=!!p.enabled;
+ document.querySelectorAll('[name="alertCategory"]').forEach(x=>x.checked=(p.categories||[]).includes(x.value));
+ document.querySelectorAll('[name="alertCity"]').forEach(x=>x.checked=(p.cities||[]).includes(x.value));
+ document.querySelectorAll('[name="alertEmployment"]').forEach(x=>x.checked=(p.employment_types||[]).includes(x.value));
+}
+async function saveAlertPreferences(){
+ if(!currentUser)return;
+ const record={user_id:currentUser.id,enabled:$('alertsEnabled').checked,categories:[...document.querySelectorAll('[name="alertCategory"]:checked')].map(x=>x.value),cities:[...document.querySelectorAll('[name="alertCity"]:checked')].map(x=>x.value),employment_types:[...document.querySelectorAll('[name="alertEmployment"]:checked')].map(x=>x.value),updated_at:new Date().toISOString()};
+ if(record.enabled&&(!record.categories.length||!record.cities.length||!record.employment_types.length)){say('alertPreferencesMessage','To enable alerts, choose at least one category, one city and one employment type.');return;}
+ say('alertPreferencesMessage','Saving preferences…');
+ const {error}=await client.from('job_alert_preferences').upsert(record,{onConflict:'user_id'});
+ say('alertPreferencesMessage',error?'Could not save preferences: '+error.message:'Your job alert preferences have been saved.');
+}
+
 async function loadSavedPhoto(path){
  const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);
  if(error){say('photoMessage','Your saved photograph could not be loaded. You can upload it again.');return;}
