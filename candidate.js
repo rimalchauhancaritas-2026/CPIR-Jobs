@@ -38,10 +38,11 @@ async function signup(e){e.preventDefault();say('signupMessage','Creating accoun
  if(data.session){say('signupMessage','Account created. You are now signed in.');}
  else{say('signupMessage','Account created. Check your email for a confirmation link, then sign in.');}
 }
-async function login(e){e.preventDefault();say('loginMessage','Signing in…');
+async function login(e){e.preventDefault();say('loginMessage','Signing in…');try{
  const {error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});
  say('loginMessage',error?error.message:'Signed in successfully.');
-}
+ }catch(error){say('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Candidate sign-in connection error:',error);}}
+
 async function resetPassword(){const email=$('loginEmail').value.trim();if(!email){say('loginMessage','Enter your email address first.');return;}say('loginMessage','Requesting password reset…');try{const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:'https://rimalchauhancaritas-2026.github.io/CPIR-Jobs/candidate.html'});say('loginMessage',error?error.message:'If an account exists for this email, a password reset link has been sent. Check your inbox and spam folder.');}catch(error){say('loginMessage','Could not reach the password reset service. Check your internet connection and try again.');console.error(error);}}
 async function saveCandidateNewPassword(e){e.preventDefault();const password=$('candidateNewPassword').value;if(password.length<8){say('candidateRecoveryMessage','Use at least 8 characters.');return;}say('candidateRecoveryMessage','Saving new password…');try{const {error}=await client.auth.updateUser({password});if(error){say('candidateRecoveryMessage',error.message);return;}say('candidateRecoveryMessage','Password updated successfully.');$('candidateRecoveryPanel').classList.add('hidden');const {data}=await client.auth.getSession();await showSession(data.session);}catch(error){say('candidateRecoveryMessage','Could not update the password. Please open the reset link again and retry.');console.error(error);}}
 async function showSession(session){currentUser=session?.user||null;$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);setCandidateNavPhoto(null);
