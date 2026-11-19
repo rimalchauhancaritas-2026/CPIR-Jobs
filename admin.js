@@ -19,11 +19,18 @@ function scheduleAdminIdleLogout(){
  clearTimeout(adminIdleTimer);
  adminIdleTimer=setTimeout(expireAdminSession,ADMIN_IDLE_LIMIT);
 }
+function checkAdminIdleTimeout(){
+ if(!adminSessionActive||adminLogoutInProgress)return;
+ const remaining=ADMIN_IDLE_LIMIT-(Date.now()-adminLastActivity);
+ if(remaining<=0){expireAdminSession();return;}
+ clearTimeout(adminIdleTimer);
+ adminIdleTimer=setTimeout(checkAdminIdleTimeout,remaining);
+}
 function recordAdminActivity(){
  if(!adminSessionActive||adminLogoutInProgress)return;
  const now=Date.now();
  if(now-adminLastActivity>=ADMIN_IDLE_LIMIT){expireAdminSession();return;}
- adminLastActivity=now;scheduleAdminIdleLogout();
+ adminLastActivity=now;checkAdminIdleTimeout();
 }
 function bindAdminActivityTracking(){
  const activityEvents=['pointerdown','keydown','click','scroll','touchstart','input','change'];
@@ -32,13 +39,14 @@ function bindAdminActivityTracking(){
   const now=Date.now();
   if(now-lastMouseActivity>=1000){lastMouseActivity=now;recordAdminActivity();}
  },{passive:true});
+ // Returning to a tab must check elapsed time, not count as fresh activity.
  document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible')recordAdminActivity();
+  if(document.visibilityState==='visible')checkAdminIdleTimeout();
  });
- window.addEventListener('focus',recordAdminActivity);
+ window.addEventListener('focus',checkAdminIdleTimeout);
 }
 function startAdminIdleTimer(){
- adminSessionActive=true;adminLastActivity=Date.now();scheduleAdminIdleLogout();
+ adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
 async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
@@ -50,11 +58,13 @@ async function loadAdminJobs(){
  box.innerHTML='<p>Loading listings…</p>';expiredBox.innerHTML='<p>Loading expired listings…</p>';
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
  const {error:expiryError}=await client.from('jobs').update({status:'expired'}).eq('status','published').not('deadline','is',null).lt('deadline',today);
- if(expiryError){box.textContent='Could not update expired jobs: '+expiryError.message;return;}
  const {data,error}=await client.from('jobs').select('*').order('created_at',{ascending:false});
- if(error){box.textContent='Could not load jobs: '+error.message;return;}
- const expired=(data||[]).filter(j=>j.status==='expired'||(j.deadline&&j.deadline<today));
+ if(error){box.innerHTML='<div class="info-card"><p>Could not load jobs: '+esc(error.message)+'</p></div>';expiredBox.innerHTML='<div class="info-card"><p>Could not load expired jobs: '+esc(error.message)+'</p></div>';return;}
+ const expired=(data||[]).filter(j=>j.status==='expired'||(j.status==='published'&&j.deadline&&j.deadline<today));
  const active=(data||[]).filter(j=>!expired.includes(j));
+ if(expiryError){
+  expiredBox.innerHTML='<div class="info-card"><p>Expired jobs could not be automatically marked in the database: '+esc(expiryError.message)+'. Please check the jobs status migration and administrator permissions in Supabase.</p></div>';
+ }
  const render=(items,target,isExpired)=>{
   if(!items.length){target.innerHTML='<div class="info-card"><p>'+(isExpired?'There are no expired jobs.':'No active, draft or archived jobs found.')+'</p></div>';return;}
   target.innerHTML=items.map(j=>'<div class="admin-row"><div><strong>'+esc(j.title)+'</strong><span>'+esc(j.organization)+' · '+esc(j.city)+' · '+esc(j.category)+'</span><span>Deadline: '+esc(j.deadline||'Not specified')+'</span><span class="status-pill">'+esc(j.status)+'</span></div><div class="admin-actions"><button class="secondary-btn" data-edit="'+j.id+'">Edit</button>'+(isExpired?'<button class="secondary-btn" data-restore="'+j.id+'">Restore</button>':'')+'<button class="danger-btn" data-delete="'+j.id+'">Delete</button></div></div>').join('');
