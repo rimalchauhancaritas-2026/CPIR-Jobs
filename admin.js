@@ -67,8 +67,17 @@ async function loadAdminJobs(){
 async function restoreJob(job){
  if(!job)return;
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
- if(!job.deadline||job.deadline<today){alert('This job deadline has passed. Click Edit, extend the deadline to a future date, set Status to Published, and save. Then return here to restore it.');return;}
- const {error}=await client.from('jobs').update({status:'published'}).eq('id',job.id);
+ const suggested=job.deadline&&job.deadline>=today?job.deadline:'';
+ const newDeadline=prompt('Enter the new application deadline (YYYY-MM-DD) to restore this job:',suggested);
+ if(newDeadline===null)return;
+ const deadline=newDeadline.trim();
+ const parsed=new Date(deadline+'T00:00:00');
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(deadline)||Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==deadline||deadline<today){
+  alert('Please enter a valid deadline that is today or a future date, using YYYY-MM-DD.');
+  return;
+ }
+ if(!confirm('Restore this job as Published with deadline '+deadline+'? It will become visible on the public website.'))return;
+ const {error}=await client.from('jobs').update({status:'published',deadline}).eq('id',job.id);
  if(error){alert('Could not restore this job: '+error.message);return;}
  await loadAdminJobs();
 }
