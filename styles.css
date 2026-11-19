@@ -508,3 +508,12 @@ footer{background:#082f57;padding-top:22px}
 @media(max-width:760px){
   .jobs-section{padding:30px 0 34px!important}
 }
+
+
+/* Shared Caritas mountain-and-greenery landscape treatment across portal pages */
+:root{--scenic-sky:#8fc4d9;--scenic-hill:#315f4b;--scenic-deep:#173f37}
+.jobs-section,.candidate-page,.admin-page,.detail-layout{position:relative;isolation:isolate;background-color:#eaf2ee;background-image:radial-gradient(ellipse at 12% 100%,rgba(47,104,69,.32) 0 13%,transparent 38%),radial-gradient(ellipse at 88% 100%,rgba(63,119,75,.28) 0 16%,transparent 42%),linear-gradient(180deg,rgba(130,183,207,.42) 0%,rgba(223,237,230,.76) 48%,rgba(226,237,225,.92) 100%)}
+.jobs-section:before,.candidate-page:before,.admin-page:before,.detail-layout:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(150deg,transparent 0 37%,rgba(61,105,91,.20) 37.2% 48%,transparent 48.2%),linear-gradient(28deg,rgba(31,78,57,.16) 0 24%,transparent 24.2%),linear-gradient(170deg,transparent 0 53%,rgba(34,83,58,.14) 53.2% 68%,transparent 68.2%)}
+.jobs-section .job-card,.candidate-auth,.candidate-page .info-card,.candidate-page .admin-form,.admin-page .info-card,.admin-page .admin-form,.detail-card{background:rgba(255,255,255,.96);backdrop-filter:blur(3px)}
+.detail-hero{background:linear-gradient(110deg,rgba(6,45,82,.91),rgba(7,91,105,.78)),linear-gradient(180deg,#7eb7cc,#315e4a)}
+@media(max-width:760px){.jobs-section,.candidate-page,.admin-page,.detail-layout{background-attachment:scroll}.jobs-section:before,.candidate-page:before,.admin-page:before,.detail-layout:before{opacity:.72}}
