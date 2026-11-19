@@ -62,9 +62,6 @@ async function loadAdminJobs(){
  if(error){box.innerHTML='<div class="info-card"><p>Could not load jobs: '+esc(error.message)+'</p></div>';expiredBox.innerHTML='<div class="info-card"><p>Could not load expired jobs: '+esc(error.message)+'</p></div>';return;}
  const expired=(data||[]).filter(j=>j.status==='expired'||(j.status==='published'&&j.deadline&&j.deadline<today));
  const active=(data||[]).filter(j=>!expired.includes(j));
- if(expiryError){
-  expiredBox.innerHTML='<div class="info-card"><p>Expired jobs could not be automatically marked in the database: '+esc(expiryError.message)+'. Please check the jobs status migration and administrator permissions in Supabase.</p></div>';
- }
  const render=(items,target,isExpired)=>{
   if(!items.length){target.innerHTML='<div class="info-card"><p>'+(isExpired?'There are no expired jobs.':'No active, draft or archived jobs found.')+'</p></div>';return;}
   target.innerHTML=items.map(j=>'<div class="admin-row"><div><strong>'+esc(j.title)+'</strong><span>'+esc(j.organization)+' · '+esc(j.city)+' · '+esc(j.category)+'</span><span>Deadline: '+esc(j.deadline||'Not specified')+'</span><span class="status-pill">'+esc(j.status)+'</span></div><div class="admin-actions"><button class="secondary-btn" data-edit="'+j.id+'">Edit</button>'+(isExpired?'<button class="secondary-btn" data-restore="'+j.id+'">Restore</button>':'')+'<button class="danger-btn" data-delete="'+j.id+'">Delete</button></div></div>').join('');
@@ -73,6 +70,7 @@ async function loadAdminJobs(){
   target.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click',()=>restoreJob(items.find(j=>j.id===b.dataset.restore))));
  };
  render(active,box,false);render(expired,expiredBox,true);
+ if(expiryError)expiredBox.insertAdjacentHTML('afterbegin','<div class="info-card"><p>Some published jobs could not be automatically marked as expired: '+esc(expiryError.message)+'. Please check the jobs status migration and administrator permissions in Supabase.</p></div>');
 }
 async function restoreJob(job){
  if(!job)return;
