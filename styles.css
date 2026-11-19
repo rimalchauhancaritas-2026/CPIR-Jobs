@@ -444,3 +444,67 @@ footer{background:#082f57;padding-top:22px}
   letter-spacing:0!important;
   line-height:1.25!important;
 }
+
+
+/* Refreshed jobs listing backdrop: subtle Caritas blue/teal atmosphere
+   keeps job cards bright, readable and accessible. */
+.jobs-section{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  padding:42px 0 46px!important;
+  background:
+    radial-gradient(ellipse at 8% 18%,rgba(29,151,190,.13),transparent 34%),
+    radial-gradient(ellipse at 92% 78%,rgba(25,173,128,.14),transparent 32%),
+    linear-gradient(135deg,#eaf4f8 0%,#f7fbfd 48%,#eaf6f2 100%)!important;
+}
+.jobs-section:before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:360px;
+  height:360px;
+  right:-150px;
+  top:-190px;
+  border:1px solid rgba(8,105,145,.10);
+  border-radius:50%;
+  box-shadow:0 0 0 28px rgba(8,105,145,.025),0 0 0 58px rgba(8,105,145,.02);
+  pointer-events:none;
+}
+.jobs-section:after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:250px;
+  height:250px;
+  left:-150px;
+  bottom:-165px;
+  border-radius:50%;
+  background:rgba(25,173,128,.055);
+  filter:blur(2px);
+  pointer-events:none;
+}
+.jobs-section>.container{position:relative;z-index:1}
+.jobs-section .section-heading{margin-bottom:16px!important}
+.jobs-section .section-heading h2{
+  color:#073d70;
+  border-left-color:#19ad80;
+}
+.jobs-section .result-count{color:#536f83}
+.jobs-section .job-card{
+  background:rgba(255,255,255,.97);
+  border:1px solid rgba(189,211,224,.9);
+  box-shadow:0 7px 22px rgba(13,57,83,.075);
+}
+.jobs-section .job-card:hover{
+  border-color:#8fcbbd;
+  box-shadow:0 14px 30px rgba(13,57,83,.13);
+}
+.jobs-section .empty{
+  background:rgba(255,255,255,.78);
+  border:1px dashed #bfd4df;
+  border-radius:14px;
+}
+@media(max-width:760px){
+  .jobs-section{padding:30px 0 34px!important}
+}
