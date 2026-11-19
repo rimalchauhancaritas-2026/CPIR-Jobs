@@ -1,7 +1,48 @@
 let client=null,editingId=null;const $=id=>document.getElementById(id);const ready=()=>window.CPIR_CONFIG?.SUPABASE_URL?.startsWith('https://')&&!window.CPIR_CONFIG.SUPABASE_URL.includes('PASTE_')&&window.CPIR_CONFIG.SUPABASE_ANON_KEY&&!window.CPIR_CONFIG.SUPABASE_ANON_KEY.includes('PASTE_');const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));function val(id){return $(id).value.trim()}function msg(id,t){$(id).textContent=t}
-function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(session){const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}}
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
+// Automatically sign administrators out after 30 minutes without activity.
+const ADMIN_IDLE_LIMIT=30*60*1000;
+let adminIdleTimer=null,adminLastActivity=0,adminSessionActive=false,adminLogoutInProgress=false,lastMouseActivity=0;
+function stopAdminIdleTimer(){
+ clearTimeout(adminIdleTimer);adminIdleTimer=null;adminSessionActive=false;adminLastActivity=0;
+}
+async function expireAdminSession(){
+ if(!adminSessionActive||adminLogoutInProgress)return;
+ adminLogoutInProgress=true;stopAdminIdleTimer();
+ try{await client.auth.signOut();}
+ finally{
+  $('adminPanel').classList.add('hidden');$('signOutBtn').classList.add('hidden');$('loginPanel').classList.remove('hidden');
+  msg('loginMessage','You have been signed out because there was no activity for 30 minutes. Please sign in again.');
+  adminLogoutInProgress=false;
+ }
+}
+function scheduleAdminIdleLogout(){
+ clearTimeout(adminIdleTimer);
+ adminIdleTimer=setTimeout(expireAdminSession,ADMIN_IDLE_LIMIT);
+}
+function recordAdminActivity(){
+ if(!adminSessionActive||adminLogoutInProgress)return;
+ const now=Date.now();
+ if(now-adminLastActivity>=ADMIN_IDLE_LIMIT){expireAdminSession();return;}
+ adminLastActivity=now;scheduleAdminIdleLogout();
+}
+function bindAdminActivityTracking(){
+ const activityEvents=['pointerdown','keydown','click','scroll','touchstart','input','change'];
+ activityEvents.forEach(type=>document.addEventListener(type,recordAdminActivity,{passive:true}));
+ document.addEventListener('mousemove',()=>{
+  const now=Date.now();
+  if(now-lastMouseActivity>=1000){lastMouseActivity=now;recordAdminActivity();}
+ },{passive:true});
+ document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')recordAdminActivity();
+ });
+ window.addEventListener('focus',recordAdminActivity);
+}
+function startAdminIdleTimer(){
+ adminSessionActive=true;adminLastActivity=Date.now();scheduleAdminIdleLogout();
+}
+function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';msg('formMessage','');}
 $('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),city:val('fCity'),area:val('fArea')||null,qualification:val('fQualification'),experience:val('fExperience')||null,employment_type:val('fEmploymentType')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:val('fDescription')||null,status:val('fStatus')};let result;if(editingId)result=await client.from('jobs').update(record).eq('id',editingId);else result=await client.from('jobs').insert(record);if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
 async function loadAdminJobs(){
