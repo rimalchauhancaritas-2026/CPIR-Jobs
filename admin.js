@@ -72,7 +72,7 @@ async function restoreJob(job){
  if(newDeadline===null)return;
  const deadline=newDeadline.trim();
  const parsed=new Date(deadline+'T00:00:00');
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(deadline)||Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==deadline||deadline<today){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==deadline||deadline<today){
   alert('Please enter a valid deadline that is today or a future date, using YYYY-MM-DD.');
   return;
  }
