@@ -71,8 +71,10 @@ async function restoreJob(job){
  const newDeadline=prompt('Enter the new application deadline (YYYY-MM-DD) to restore this job:',suggested);
  if(newDeadline===null)return;
  const deadline=newDeadline.trim();
- const parsed=new Date(deadline+'T00:00:00');
- if(!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==deadline||deadline<today){
+ const parts=deadline.split('-').map(Number);
+ const parsed=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
+ const validDate=/^\d{4}-\d{2}-\d{2}$/.test(deadline)&&parts.length===3&&parsed.getUTCFullYear()===parts[0]&&parsed.getUTCMonth()===parts[1]-1&&parsed.getUTCDate()===parts[2];
+ if(!validDate||deadline<today){
   alert('Please enter a valid deadline that is today or a future date, using YYYY-MM-DD.');
   return;
  }
