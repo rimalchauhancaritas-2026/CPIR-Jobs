@@ -298,3 +298,138 @@ footer{background:#082f57;padding-top:22px}
  .search-panel{margin-top:24px!important}
  .categories-section{padding-top:30px!important}
 }
+
+
+/* Flyer-aligned hero layout: preserve the live portal search and use the right
+   side for practical next-step links instead of a decorative laptop mockup. */
+.hero{
+  min-height:0!important;
+  padding:64px 0 42px!important;
+  background:
+    linear-gradient(90deg,rgba(3,36,66,.82) 0%,rgba(4,55,91,.67) 52%,rgba(5,62,92,.48) 100%),
+    var(--portal-scenic) center 48%/cover no-repeat!important;
+  color:#fff;
+}
+.hero-landscape{display:none!important}
+.hero-inner{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.15fr) minmax(310px,.85fr);
+  align-items:center;
+  column-gap:clamp(28px,5vw,76px);
+  row-gap:30px;
+}
+.hero-copy{
+  max-width:650px!important;
+  margin:0!important;
+  text-align:left!important;
+  align-self:center;
+}
+.hero-copy .eyebrow{color:#b8f5df!important;letter-spacing:1.5px;margin-bottom:16px}
+.hero h1{
+  font-size:clamp(42px,5.1vw,66px)!important;
+  line-height:1.02!important;
+  letter-spacing:-1.7px!important;
+  margin:0 0 12px!important;
+  text-align:left;
+}
+.hero h1 span{color:#37d4aa!important}
+.hero-subheading{
+  color:#fff!important;
+  font-size:clamp(24px,2.5vw,34px)!important;
+  line-height:1.12!important;
+  margin:0 0 18px!important;
+  letter-spacing:-.7px;
+}
+.hero-copy>p:not(.eyebrow){
+  max-width:560px!important;
+  margin:0!important;
+  font-size:clamp(15px,1.35vw,18px)!important;
+  line-height:1.55!important;
+  color:#fff!important;
+  font-weight:600!important;
+}
+.hero-actions{justify-content:flex-start!important;margin-top:23px!important}
+.hero-cta-primary{background:#19c99c!important;color:#fff!important;border-radius:28px!important;padding:14px 24px!important}
+.hero-cta-secondary{border:1px solid #ffffffa6!important;border-radius:28px!important;background:#ffffff12!important}
+.hero-guide{
+  width:100%;
+  max-width:480px;
+  justify-self:end;
+  padding:26px 25px 20px;
+  border:1px solid #ffffff70;
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(239,248,252,.93));
+  box-shadow:0 18px 45px #062b4850;
+  color:#103d68;
+}
+.guide-kicker{font-size:10px;letter-spacing:1.7px;font-weight:900;color:#0a9b78;margin:0 0 7px}
+.hero-guide h2{font-size:24px;line-height:1.2;color:#073d70;margin:0 0 13px}
+.hero-guide>a{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #dce8ef;color:#103d68;text-decoration:none}
+.hero-guide>a>span:nth-child(2){display:grid;gap:3px;flex:1}
+.hero-guide>a strong{font-size:14px}
+.hero-guide>a small{font-size:11px;color:#627b91;line-height:1.4}
+.hero-guide>a>b{font-size:19px;color:#0786c7}
+.guide-number{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:#e4f4f2;color:#078d72;font-size:12px;font-weight:900}
+.guide-location{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:13px;border-top:1px solid #dce8ef;color:#55728a;font-size:11px;font-weight:800}
+.guide-location span{font-size:17px;color:#0786c7}
+.search-panel{
+  grid-column:1/-1;
+  margin:0!important;
+  transform:none!important;
+  box-shadow:0 14px 36px #001b3850!important;
+  border:1px solid #e5edf3!important;
+  border-radius:12px!important;
+}
+.categories-section{padding-top:38px!important}
+
+/* A dedicated community moment lower on the page, inspired by the flyer.
+   The original jobs, categories, alerts and contact sections remain in place. */
+.youth-community-section{
+  padding:52px 0;
+  background:linear-gradient(110deg,#f4f9fc 0%,#fff 53%,#e8f3fa 100%);
+  overflow:hidden;
+}
+.youth-community-inner{
+  display:grid;
+  grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+  align-items:center;
+  gap:38px;
+}
+.youth-community-copy{padding:12px 0}
+.youth-community-copy .eyebrow{color:#078b75;font-size:11px;letter-spacing:1.8px;font-weight:900}
+.youth-community-copy h2{font-size:clamp(30px,3.5vw,44px);line-height:1.1;color:#073d70;margin:8px 0 14px}
+.youth-community-copy>p:not(.eyebrow){max-width:510px;color:#345b7c;font-size:16px;line-height:1.7}
+.youth-community-actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:22px}
+.youth-community-actions .primary-btn{border-radius:26px;background:#0785c9}
+.youth-community-actions .inline-link{font-weight:800;color:#087d70}
+.youth-community-photo{
+  min-height:300px;
+  border-radius:18px;
+  background:
+    linear-gradient(90deg,rgba(5,47,81,.05),rgba(5,47,81,.02)),
+    url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=85") center 48%/cover no-repeat;
+  box-shadow:0 16px 38px #0b365322;
+}
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);column-gap:25px}
+  .hero{padding:48px 0 34px!important}
+  .hero-guide{padding:21px 19px 16px}
+  .hero-guide h2{font-size:21px}
+  .youth-community-inner{gap:24px}
+  .youth-community-photo{min-height:260px}
+}
+@media(max-width:700px){
+  .hero{padding:42px 0 30px!important}
+  .hero-inner{grid-template-columns:1fr;row-gap:24px}
+  .hero-copy{max-width:100%!important}
+  .hero h1{font-size:42px!important}
+  .hero-subheading{font-size:25px!important}
+  .hero-copy>p:not(.eyebrow){font-size:15px!important}
+  .hero-guide{max-width:none;justify-self:stretch}
+  .search-panel{grid-column:1}
+  .youth-community-section{padding:36px 0}
+  .youth-community-inner{grid-template-columns:1fr;gap:20px}
+  .youth-community-copy{padding:0}
+  .youth-community-copy>p:not(.eyebrow){font-size:14px}
+  .youth-community-photo{min-height:230px;order:-1}
+}
