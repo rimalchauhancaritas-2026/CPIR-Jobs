@@ -531,3 +531,31 @@ footer{background:#082f57;padding-top:22px}
 
 /* Keep the legacy storage textarea hidden; the rich-text editor is the only visible field. */
 #fDescription[hidden]{display:none!important}
+
+
+/* Public job detail: compact, readable description and visible source link. */
+.job-description-content{
+  color:#294761;
+  font-size:15px;
+  line-height:1.65;
+  overflow-wrap:anywhere;
+}
+.job-description-content p{margin:0 0 10px;line-height:1.65}
+.job-description-content p:last-child{margin-bottom:0}
+.job-description-content ul,.job-description-content ol{
+  margin:7px 0 11px;
+  padding-left:25px;
+}
+.job-description-content li{margin:2px 0;line-height:1.6}
+.job-description-content strong,.job-description-content b{color:#173b5c}
+.job-source-content{margin-top:2px;color:#526b80;font-size:14px}
+.job-source-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:#0876bd;
+  font-weight:800;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.job-source-link:hover{color:#07558a}
