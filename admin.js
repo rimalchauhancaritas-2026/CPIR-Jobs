@@ -49,7 +49,7 @@ function startAdminIdleTimer(){
  adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';if($('fDescriptionEditor'))$('fDescriptionEditor').innerHTML='';msg('formMessage','');}
 function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\/$/,'').toLowerCase();}}
@@ -364,3 +364,49 @@ function initJobDescriptionEditor(){
  });
 }
 initJobDescriptionEditor();
+
+
+// Smart Job Collector review queue. Source ingestion is server-side and is
+// deliberately disabled until each provider's permitted feed/API is configured.
+let fetchedJobsCache=[];
+async function loadFetchedJobs(){
+ const box=$('fetchedJobsList');if(!box||!client)return;
+ box.innerHTML='<p>Loading fetched vacancies…</p>';
+ const {data,error}=await client.from('fetched_jobs').select('*').order('fetched_at',{ascending:false}).limit(500);
+ if(error){
+  box.innerHTML='<div class="source-notice">The Smart Job Collector database is not ready yet. Run <strong>supabase/migrations/smart-job-collector-setup.sql</strong> in the Supabase SQL Editor, then refresh this panel. Details: '+esc(error.message)+'</div>';
+  $('fetchedJobsMessage').textContent='Collector queue is waiting for its database setup.';
+  return;
+ }
+ fetchedJobsCache=data||[];
+ if(!fetchedJobsCache.length){box.innerHTML='<div class="source-workflow"><strong>No fetched vacancies yet.</strong><p>Once an approved source connector is configured and its daily schedule is enabled, matching vacancies will appear here.</p></div>';updateFetchedActions();return;}
+ box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th><input type="checkbox" id="selectAllFetched" aria-label="Select all fetched jobs"></th><th>Vacancy</th><th>Location</th><th>Deadline</th><th>Source</th><th>Review status</th></tr></thead><tbody>'+fetchedJobsCache.map(j=>'<tr><td><input type="checkbox" class="fetched-job-check" value="'+esc(j.id)+'" aria-label="Select '+esc(j.title)+'"></td><td><strong>'+esc(j.title||'Title needs checking')+'</strong><br>'+esc(j.organization||'Employer not identified')+'<br>'+(j.source_url?'<a href="'+esc(j.source_url)+'" target="_blank" rel="noopener noreferrer">Original vacancy ↗</a>':'<span>Source link missing</span>')+'</td><td>'+esc(j.city||'Unconfirmed')+'</td><td>'+esc(j.deadline||'Not verified')+'</td><td>'+esc(j.source_name||'Unknown')+'</td><td><span class="status-pill">'+esc(j.review_status||'needs_review')+'</span></td></tr>').join('')+'</tbody></table></div>';
+ $('selectAllFetched')?.addEventListener('change',e=>{box.querySelectorAll('.fetched-job-check').forEach(c=>c.checked=e.target.checked);updateFetchedActions();});
+ box.querySelectorAll('.fetched-job-check').forEach(c=>c.addEventListener('change',updateFetchedActions));
+ updateFetchedActions();
+}
+function selectedFetchedJobs(){const ids=[...document.querySelectorAll('.fetched-job-check:checked')].map(x=>x.value);return fetchedJobsCache.filter(j=>ids.includes(String(j.id)));}
+function updateFetchedActions(){const n=selectedFetchedJobs().length;$('downloadFetchedSelected').disabled=!n;$('reviewFetchedSelected').disabled=!n;$('fetchedJobsMessage').textContent=n?n+' vacancy/vacancies selected.':'Select one or more fetched vacancies to export or move to Draft.';}
+$('refreshFetchedJobs')?.addEventListener('click',loadFetchedJobs);
+$('downloadFetchedSelected')?.addEventListener('click',()=>{
+ const rows=selectedFetchedJobs();if(!rows.length||!window.XLSX)return;
+ const headers=['title','organization','category','city','area','qualification','experience','employment_type','salary','deadline','source','source_url','apply_url','description'];
+ const values=[headers,...rows.map(j=>headers.map(k=>k==='source'?(j.source_name||''):j[k]??''))];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(values),'Jobs');XLSX.writeFile(wb,'Caritas-Fetched-Jobs-Review.xlsx');
+});
+$('reviewFetchedSelected')?.addEventListener('click',async()=>{
+ const rows=selectedFetchedJobs();if(!rows.length||!client)return;
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
+ const ready=rows.filter(j=>j.title&&j.organization&&['Islamabad','Rawalpindi'].includes(normalizeCity(j.city))&&j.deadline&&/^\d{4}-\d{2}-\d{2}$/.test(j.deadline)&&j.deadline>=today&&j.source_url);
+ const skipped=rows.length-ready.length;
+ if(!ready.length){msg('fetchedJobsMessage','None selected meet the minimum checks (title, employer, Rawalpindi/Islamabad, valid future deadline and original source URL).');return;}
+ if(!confirm('Move '+ready.length+' eligible vacancy/vacancies into Caritas Jobs as Draft? '+skipped+' incomplete or expired item(s) will remain in the collector queue.'))return;
+ const existing=await client.from('jobs').select('id,title,organization,source_url');
+ if(existing.error){msg('fetchedJobsMessage','Could not check duplicates: '+existing.error.message);return;}
+ const fresh=ready.filter(j=>!(existing.data||[]).some(x=>(j.source_url&&normalizeDuplicateUrl(j.source_url)===normalizeDuplicateUrl(x.source_url))||(normalizeDuplicateText(j.title)===normalizeDuplicateText(x.title)&&normalizeDuplicateText(j.organization)===normalizeDuplicateText(x.organization))));
+ const records=fresh.map(j=>({title:j.title,organization:j.organization,category:normalizeCategory(j.category)||'Private',city:normalizeCity(j.city),area:j.area||null,qualification:j.qualification||'Not specified',experience:j.experience||null,employment_type:j.employment_type||null,salary:j.salary||null,deadline:j.deadline,source:j.source_name||null,source_url:j.source_url,apply_url:j.apply_url||j.source_url,description:j.description||null,status:'draft'}));
+ if(records.length){const inserted=await client.from('jobs').insert(records);if(inserted.error){msg('fetchedJobsMessage','Could not create Draft jobs: '+inserted.error.message);return;}}
+ const ids=ready.map(j=>j.id);if(ids.length){const updated=await client.from('fetched_jobs').update({review_status:'imported'}).in('id',ids);if(updated.error){msg('fetchedJobsMessage','Draft jobs created, but queue status could not be updated: '+updated.error.message);await loadAdminJobs();return;}}
+ msg('fetchedJobsMessage',records.length+' new Draft job(s) created. '+(ready.length-records.length)+' duplicate(s) skipped; '+skipped+' incomplete/expired item(s) left for review.');
+ await loadFetchedJobs();await loadAdminJobs();
+});
