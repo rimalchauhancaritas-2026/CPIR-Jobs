@@ -517,3 +517,9 @@ footer{background:#082f57;padding-top:22px}
 .jobs-section .job-card,.candidate-auth,.candidate-page .info-card,.candidate-page .admin-form,.admin-page .info-card,.admin-page .admin-form,.detail-card{background:rgba(255,255,255,.96);backdrop-filter:blur(3px)}
 .detail-hero{background:linear-gradient(110deg,rgba(6,45,82,.91),rgba(7,91,105,.78)),linear-gradient(180deg,#7eb7cc,#315e4a)}
 @media(max-width:760px){.jobs-section,.candidate-page,.admin-page,.detail-layout{background-attachment:scroll}.jobs-section:before,.candidate-page:before,.admin-page:before,.detail-layout:before{opacity:.72}}
+
+/* Updated official Caritas Pakistan logo */
+.nav-wrap>.brand .caritas-logo{width:160px;max-width:24vw;height:auto;object-fit:contain}
+.footer-brand{background:#fff;padding:8px 12px;border-radius:10px;width:max-content;max-width:100%}
+.footer-brand .footer-logo{width:160px;max-width:100%;height:auto}
+@media(max-width:760px){.nav-wrap>.brand .caritas-logo{width:88px;max-width:24vw}.footer-brand .footer-logo{width:135px}}
