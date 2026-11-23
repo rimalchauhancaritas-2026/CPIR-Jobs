@@ -366,6 +366,34 @@ function initJobDescriptionEditor(){
 initJobDescriptionEditor();
 
 
+
+ // Safe test fixtures: no external websites are contacted and demo rows cannot become live jobs.
+ $('loadCollectorSamples')?.addEventListener('click',async()=>{
+  if(!client)return;
+  const button=$('loadCollectorSamples');button.disabled=true;
+  msg('fetchedJobsMessage','Preparing sample vacancies…');
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
+  const plusDays=n=>{const d=new Date(today+'T12:00:00+05:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+  const fixtures=[
+   {source_name:'DEMO SAMPLE DATA',external_id:'CPIR-DEMO-001',title:'Junior Office Assistant (Sample)',organization:'Example Training Organization',category:'Private',city:'Islamabad',area:'Blue Area',qualification:'Intermediate',experience:'Fresh candidates may apply',employment_type:'Full-time',salary:'PKR 35,000–45,000 (sample only)',posted_date:today,deadline:plusDays(60),source_url:'https://example.com/demo-vacancy-001',apply_url:'https://example.com/demo-apply-001',description:'TEST DATA ONLY. Fictional vacancy to test the Smart Job Collector. Do not contact or pay this organization.',is_demo:true,review_status:'needs_review',review_notes:'Demo fixture: not a real vacancy. Must never be imported into live jobs.',raw_data:{demo:true,fixture_version:1}},
+   {source_name:'DEMO SAMPLE DATA',external_id:'CPIR-DEMO-002',title:'Community Mobilizer (Sample)',organization:'Example Community Services',category:'NGO',city:'Rawalpindi',area:'Saddar',qualification:'Bachelor degree preferred',experience:'1 year (sample)',employment_type:'Contract',salary:'Sample only',posted_date:today,deadline:plusDays(75),source_url:'https://example.com/demo-vacancy-002',apply_url:'https://example.com/demo-apply-002',description:'TEST DATA ONLY. Fictional Rawalpindi vacancy for testing queue review and Excel export.',is_demo:true,review_status:'needs_review',review_notes:'Demo fixture: not a real vacancy. Must never be imported into live jobs.',raw_data:{demo:true,fixture_version:1}},
+   {source_name:'DEMO SAMPLE DATA',external_id:'CPIR-DEMO-003',title:'Data Entry Operator (Out-of-region test)',organization:'Example Testing Company',category:'Private',city:'Lahore',area:'Test location',qualification:'Matriculation',experience:'Not required',employment_type:'Full-time',salary:'Sample only',posted_date:today,deadline:plusDays(90),source_url:'https://example.com/demo-vacancy-003',apply_url:'https://example.com/demo-apply-003',description:'TEST DATA ONLY. Fictional Lahore listing used to verify the region restriction.',is_demo:true,review_status:'rejected',review_notes:'Demo test: outside the portal region (Rawalpindi/Islamabad only).',raw_data:{demo:true,fixture_version:1}}
+  ];
+  try{
+   const lookup=await client.from('fetched_jobs').select('external_id').eq('source_name','DEMO SAMPLE DATA');
+   if(lookup.error)throw lookup.error;
+   const known=new Set((lookup.data||[]).map(x=>x.external_id));
+   const missing=fixtures.filter(x=>!known.has(x.external_id));
+   if(missing.length){const result=await client.from('fetched_jobs').insert(missing);if(result.error)throw result.error;}
+   const run=await client.from('collector_runs').insert({run_mode:'sample',status:'succeeded',items_seen:fixtures.length,items_inserted:missing.length,items_duplicates:fixtures.length-missing.length,items_out_of_region:1,summary:'Sample fixture load. No external websites were contacted.'});
+   if(run.error)throw run.error;
+   msg('fetchedJobsMessage',missing.length+' sample vacancy/vacancies added; '+(fixtures.length-missing.length)+' already existed. No external source was contacted. Demo records are blocked from Draft import.');
+   await loadFetchedJobs();
+  }catch(error){
+   msg('fetchedJobsMessage','Could not load sample data. Apply supabase/migrations/smart-job-collector-engine-setup.sql first. Details: '+error.message);
+  }finally{button.disabled=false;}
+ });
+
 // Smart Job Collector review queue. Source ingestion is server-side and is
 // deliberately disabled until each provider's permitted feed/API is configured.
 let fetchedJobsCache=[];
@@ -380,7 +408,7 @@ async function loadFetchedJobs(){
  }
  fetchedJobsCache=data||[];
  if(!fetchedJobsCache.length){box.innerHTML='<div class="source-workflow"><strong>No fetched vacancies yet.</strong><p>Once an approved source connector is configured and its daily schedule is enabled, matching vacancies will appear here.</p></div>';updateFetchedActions();return;}
- box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th><input type="checkbox" id="selectAllFetched" aria-label="Select all fetched jobs"></th><th>Vacancy</th><th>Location</th><th>Deadline</th><th>Source</th><th>Review status</th></tr></thead><tbody>'+fetchedJobsCache.map(j=>'<tr><td><input type="checkbox" class="fetched-job-check" value="'+esc(j.id)+'" aria-label="Select '+esc(j.title)+'"></td><td><strong>'+esc(j.title||'Title needs checking')+'</strong><br>'+esc(j.organization||'Employer not identified')+'<br>'+(j.source_url?'<a href="'+esc(j.source_url)+'" target="_blank" rel="noopener noreferrer">Original vacancy ↗</a>':'<span>Source link missing</span>')+'</td><td>'+esc(j.city||'Unconfirmed')+'</td><td>'+esc(j.deadline||'Not verified')+'</td><td>'+esc(j.source_name||'Unknown')+'</td><td><span class="status-pill">'+esc(j.review_status||'needs_review')+'</span></td></tr>').join('')+'</tbody></table></div>';
+ box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th><input type="checkbox" id="selectAllFetched" aria-label="Select all fetched jobs"></th><th>Vacancy</th><th>Location</th><th>Deadline</th><th>Source</th><th>Review status</th></tr></thead><tbody>'+fetchedJobsCache.map(j=>'<tr><td><input type="checkbox" class="fetched-job-check" value="'+esc(j.id)+'" aria-label="Select '+esc(j.title)+'"></td><td><strong>'+esc(j.title||'Title needs checking')+'</strong><br>'+esc(j.organization||'Employer not identified')+'<br>'+(j.source_url?'<a href="'+esc(j.source_url)+'" target="_blank" rel="noopener noreferrer">Original vacancy ↗</a>':'<span>Source link missing</span>')+'</td><td>'+esc(j.city||'Unconfirmed')+'</td><td>'+esc(j.deadline||'Not verified')+'</td><td>'+esc(j.source_name||'Unknown')+(j.is_demo?'<br><span class="status-pill">DEMO — TEST ONLY</span>':'')+'</td><td><span class="status-pill">'+esc(j.review_status||'needs_review')+'</span></td></tr>').join('')+'</tbody></table></div>';
  $('selectAllFetched')?.addEventListener('change',e=>{box.querySelectorAll('.fetched-job-check').forEach(c=>c.checked=e.target.checked);updateFetchedActions();});
  box.querySelectorAll('.fetched-job-check').forEach(c=>c.addEventListener('change',updateFetchedActions));
  updateFetchedActions();
@@ -397,9 +425,9 @@ $('downloadFetchedSelected')?.addEventListener('click',()=>{
 $('reviewFetchedSelected')?.addEventListener('click',async()=>{
  const rows=selectedFetchedJobs();if(!rows.length||!client)return;
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
- const ready=rows.filter(j=>j.title&&j.organization&&['Islamabad','Rawalpindi'].includes(normalizeCity(j.city))&&j.deadline&&/^\d{4}-\d{2}-\d{2}$/.test(j.deadline)&&j.deadline>=today&&j.source_url);
+ const ready=rows.filter(j=>!j.is_demo&&j.title&&j.organization&&['Islamabad','Rawalpindi'].includes(normalizeCity(j.city))&&j.deadline&&/^\d{4}-\d{2}-\d{2}$/.test(j.deadline)&&j.deadline>=today&&j.source_url);
  const skipped=rows.length-ready.length;
- if(!ready.length){msg('fetchedJobsMessage','None selected meet the minimum checks (title, employer, Rawalpindi/Islamabad, valid future deadline and original source URL).');return;}
+ if(!ready.length){msg('fetchedJobsMessage','None selected can be moved to Draft. Demo fixtures are test-only; real vacancies must have a title, employer, Rawalpindi/Islamabad location, valid future deadline and original source URL.');return;}
  if(!confirm('Move '+ready.length+' eligible vacancy/vacancies into Caritas Jobs as Draft? '+skipped+' incomplete or expired item(s) will remain in the collector queue.'))return;
  const existing=await client.from('jobs').select('id,title,organization,source_url');
  if(existing.error){msg('fetchedJobsMessage','Could not check duplicates: '+existing.error.message);return;}
