@@ -14,7 +14,22 @@
 <div class="source-workflow"><h3>Collection and verification checklist</h3><ol><li>Open a source and find a current vacancy.</li><li>Confirm the employer and that the original advertisement is genuine.</li><li>Check that the job is in Rawalpindi/Islamabad or explicitly open to eligible applicants there.</li><li>Record the exact vacancy page URL (not just the source homepage), application URL and deadline.</li><li>Check qualification, experience, job type and application instructions against the original notice.</li><li>Search the portal for an existing listing before adding it. Keep the source name and original URL for traceability.</li><li>Save as Draft. An authorised Caritas administrator reviews the details before publishing.</li></ol>
 <div class="source-actions"><button class="primary-btn" type="button" id="sourceGoToJobForm">Add a verified job</button><button class="secondary-btn" type="button" id="sourceGoToExcel">Use bulk Excel import</button></div>
 <p class="source-footnote">Please do not use bots or automated scraping on job websites. Automatic feeds or APIs will only be added after the provider grants access or confirms permission. Do not copy listings whose reuse is prohibited.</p></div>
-</section><section class="info-card" id="excelImportPanel" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
+</section>
+<section class="info-card" id="smartCollectorPanel" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
+ <div class="section-heading"><div><p class="eyebrow">AUTOMATED COLLECTION WORKSPACE</p><h2>Smart Job Collector</h2><p>Approved source feeds will place matching vacancies here for Caritas review. No vacancy is published automatically.</p></div></div>
+ <div class="source-notice"><strong>Collection rules:</strong> Rawalpindi and Islamabad only. Expired vacancies and duplicates are excluded or flagged. Each listing must retain its original source link. A daily scheduled collector will only be activated for sources that provide an approved API, RSS/feed, employer feed, email alert, or written permission.</div>
+ <div id="collectorSourceStatus" class="source-grid">
+  <article class="source-card"><h3>National Jobs Portal</h3><p>Connector: awaiting confirmation of an approved data feed or access method.</p><span class="status-pill">Permission / feed check required</span></article>
+  <article class="source-card"><h3>ROZEE.PK</h3><p>Connector: partner/API/feed access needs confirmation.</p><span class="status-pill">Permission / feed check required</span></article>
+  <article class="source-card"><h3>Mustakbil</h3><p>Automated harvesting is not enabled; use only a provider-approved integration.</p><span class="status-pill">Automated access disabled</span></article>
+  <article class="source-card"><h3>Indeed, newspapers and employers</h3><p>Will be connected individually when an approved feed, API, or alert source is available.</p><span class="status-pill">Connector not yet configured</span></article>
+ </div>
+ <div class="source-actions"><button class="secondary-btn" type="button" id="refreshFetchedJobs">Refresh fetched jobs</button><button class="secondary-btn" type="button" id="downloadFetchedSelected" disabled>Download selected as Excel</button><button class="primary-btn" type="button" id="reviewFetchedSelected" disabled>Move selected to Draft jobs</button></div>
+ <p id="fetchedJobsMessage" role="status"></p>
+ <div id="fetchedJobsList"><p>Fetched vacancies will appear here after an approved source connector is activated.</p></div>
+ <p class="source-footnote">The review queue is separate from public jobs. Missing posting dates or deadlines must be checked against the original advertisement before approval. Daily collection requires a server-side schedule; this page alone cannot run while the browser is closed.</p>
+</section>
+<section class="info-card" id="excelImportPanel" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
 <h2>Import jobs from Excel</h2>
 <p>Upload an Excel workbook with a sheet named <strong>Jobs</strong>. Use one row per vacancy. Imported listings are saved as <strong>Draft</strong> so you can verify them before publishing.</p>
 <div class="admin-actions" style="margin:1rem 0"><button class="secondary-btn" type="button" id="downloadExcelTemplate">Download Excel template</button><label class="secondary-btn" for="jobsExcelFile" style="cursor:pointer">Choose Excel file</label><input id="jobsExcelFile" type="file" accept=".xlsx,.xls" style="max-width:240px"></div>
