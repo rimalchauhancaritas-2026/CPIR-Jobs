@@ -559,3 +559,51 @@ footer{background:#082f57;padding-top:22px}
   text-underline-offset:3px;
 }
 .job-source-link:hover{color:#07558a}
+
+
+/* Homepage purpose and recruitment-fee disclaimer */
+.footer-purpose-disclaimer{
+  display:grid;
+  grid-template-columns:1fr 1.35fr;
+  gap:34px;
+  padding-top:25px;
+  padding-bottom:24px;
+  color:rgba(255,255,255,.88);
+}
+.footer-purpose-disclaimer h4{margin:0 0 10px;color:#fff;font-size:15px}
+.footer-purpose-disclaimer p,.footer-purpose-disclaimer li{font-size:13px;line-height:1.7;color:rgba(255,255,255,.78)}
+.footer-purpose-disclaimer p{margin:0 0 9px}
+.footer-purpose-disclaimer ol{padding-left:20px;margin:10px 0}
+.footer-purpose-disclaimer li{margin:0 0 7px}
+.full-disclaimer summary{display:inline-block;color:#fff;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:4px}
+.full-disclaimer[open]{padding-top:7px}
+.copyright .legal-links a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.disclaimer-overlay[hidden]{display:none!important}
+.disclaimer-overlay{
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(7,25,39,.76);
+  backdrop-filter:blur(5px);
+}
+.disclaimer-dialog{
+  width:min(620px,100%);max-height:min(88vh,760px);overflow:auto;
+  padding:28px;border-radius:18px;background:#fff;color:#183650;
+  box-shadow:0 24px 80px rgba(0,0,0,.32);
+}
+.disclaimer-dialog-heading{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.disclaimer-alert-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff2d9;color:#9a5a00;font-weight:900;font-size:20px}
+.disclaimer-kicker{font-size:11px;letter-spacing:1.4px;font-weight:800;color:#9a5a00}
+.disclaimer-dialog h2{margin:0 0 12px;color:#123d5c;font-size:25px;line-height:1.25}
+.disclaimer-dialog p{font-size:14px;line-height:1.65;color:#40586b;margin:0 0 12px}
+.disclaimer-popup-scroll{max-height:34vh;overflow:auto;padding:13px 15px;margin:12px 0;background:#f3f7f8;border:1px solid #e0e9ec;border-radius:11px}
+.disclaimer-popup-scroll p:last-child{margin-bottom:0}
+.disclaimer-final-reminder{font-weight:700!important;color:#173e59!important}
+.disclaimer-accept{width:100%;justify-content:center;margin-top:5px;border:0;cursor:pointer}
+.disclaimer-full-link{display:block;text-align:center;margin-top:13px;color:#176a9b;font-size:13px;font-weight:700}
+body.disclaimer-open{overflow:hidden}
+@media(max-width:760px){
+  .footer-purpose-disclaimer{grid-template-columns:1fr;gap:20px;padding-top:22px;padding-bottom:20px}
+  .disclaimer-dialog{padding:22px 18px;border-radius:15px}
+  .disclaimer-dialog h2{font-size:22px}
+  .disclaimer-popup-scroll{max-height:36vh}
+}

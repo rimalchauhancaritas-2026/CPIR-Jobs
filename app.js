@@ -85,3 +85,30 @@ function renderJobDescription(value){
   .replace(/(?:<br>\s*){3,}/gi,'<br><br>')
   .replace(/(?:<\/p>\s*){2,}/gi,'</p>');
 }
+
+
+// Show the visitor disclaimer once per browser, on the first homepage visit.
+function initFirstVisitDisclaimer(){
+  const popup=document.getElementById('firstVisitDisclaimer');
+  const accept=document.getElementById('acceptDisclaimer');
+  if(!popup||!accept)return;
+  const storageKey='cpirJobsDisclaimerAcknowledged_v1';
+  let acknowledged=false;
+  try{acknowledged=localStorage.getItem(storageKey)==='yes';}catch(_error){}
+  if(acknowledged)return;
+  popup.hidden=false;
+  document.body.classList.add('disclaimer-open');
+  accept.focus();
+  accept.addEventListener('click',()=>{
+    try{localStorage.setItem(storageKey,'yes');}catch(_error){}
+    popup.hidden=true;
+    document.body.classList.remove('disclaimer-open');
+  });
+  document.getElementById('popupFullDisclaimerLink')?.addEventListener('click',()=>{
+    popup.hidden=true;
+    document.body.classList.remove('disclaimer-open');
+    // Keep the notice acknowledged only after the visitor presses Continue.
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initFirstVisitDisclaimer);
+else initFirstVisitDisclaimer();
