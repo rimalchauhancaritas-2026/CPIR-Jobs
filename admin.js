@@ -410,3 +410,16 @@ $('reviewFetchedSelected')?.addEventListener('click',async()=>{
  msg('fetchedJobsMessage',records.length+' new Draft job(s) created. '+(ready.length-records.length)+' duplicate(s) skipped; '+skipped+' incomplete/expired item(s) left for review.');
  await loadFetchedJobs();await loadAdminJobs();
 });
+
+// Admin dashboard tabs: keep navigation available while scrolling and show one workspace at a time.
+(function bindAdminTabs(){
+ const tabs=[...document.querySelectorAll('[data-admin-tab]')];
+ const panels=[...document.querySelectorAll('[data-admin-panel]')];
+ if(!tabs.length||!panels.length)return;
+ function activateAdminTab(name){
+  tabs.forEach(tab=>{const active=tab.dataset.adminTab===name;tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));});
+  panels.forEach(panel=>{const active=panel.dataset.adminPanel===name;panel.classList.toggle('active',active);});
+  window.scrollTo({top:0,behavior:'smooth'});
+ }
+ tabs.forEach(tab=>tab.addEventListener('click',()=>activateAdminTab(tab.dataset.adminTab)));
+})();
