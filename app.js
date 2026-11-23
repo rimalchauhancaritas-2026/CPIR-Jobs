@@ -53,12 +53,35 @@ function initHomeAuthNav(){
 initHomeAuthNav();
 
 
-// Render only the small formatting subset supported by the admin editor.
+// Render a compact, safe description even when pasted source HTML contains
+// nested paragraphs or empty editor lines.
 function renderJobDescription(value){
  const source=String(value||'');
- if(!/[<][a-z][^>]*>/i.test(source))return escapeHtml(source);
+ if(!/[<][a-z][^>]*>/i.test(source))return escapeHtml(source).replace(/(?:\r?\n){3,}/g,'\n\n').replace(/\r?\n/g,'<br>');
  const parsed=new DOMParser().parseFromString(source,'text/html');
  const allowed=new Set(['B','STRONG','I','EM','BR','P','UL','OL','LI']);
- const clean=node=>{let out='';node.childNodes.forEach(child=>{if(child.nodeType===3)out+=escapeHtml(child.nodeValue);else if(child.nodeType===1){const inner=clean(child);out+=allowed.has(child.tagName)?'<'+child.tagName.toLowerCase()+'>'+inner+'</'+child.tagName.toLowerCase()+'>':inner;}});return out;};
- return clean(parsed.body);
+ const clean=node=>{
+  let out='';
+  node.childNodes.forEach(child=>{
+   if(child.nodeType===3){out+=escapeHtml(child.nodeValue);}
+   else if(child.nodeType===1){
+    const tag=child.tagName,inner=clean(child);
+    if(tag==='P'){
+     if(!inner.replace(/&nbsp;|\s|<br\s*\/>/gi,'').trim())return;
+     // Invalid nested block markup is flattened rather than creating large gaps.
+     if(child.querySelector('p,ul,ol'))out+=inner;
+     else out+='<p>'+inner+'</p>';
+    }else if(['UL','OL'].includes(tag)){
+     if(inner.trim())out+='<'+tag.toLowerCase()+'>'+inner+'</'+tag.toLowerCase()+'>';
+    }else if(allowed.has(tag)){
+     if(tag==='BR')out+='<br>';
+     else out+='<'+tag.toLowerCase()+'>'+inner+'</'+tag.toLowerCase()+'>';
+    }else out+=inner;
+   }
+  });
+  return out;
+ };
+ return clean(parsed.body)
+  .replace(/(?:<br>\s*){3,}/gi,'<br><br>')
+  .replace(/(?:<\/p>\s*){2,}/gi,'</p>');
 }
