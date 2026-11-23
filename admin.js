@@ -289,5 +289,33 @@ function sanitizeJobDescription(value){
 }
 function escapeJobText(value){return String(value??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));}
 function getJobDescriptionHtml(){const editor=$('fDescriptionEditor');if(!editor)return val('fDescription');const safe=sanitizeJobDescription(editor.innerHTML);$('fDescription').value=safe;return safe;}
-function initJobDescriptionEditor(){const editor=$('fDescriptionEditor');if(!editor)return;document.querySelectorAll('[data-format]').forEach(button=>button.addEventListener('click',()=>{editor.focus();document.execCommand(button.dataset.format,false,null);getJobDescriptionHtml();}));editor.addEventListener('input',getJobDescriptionHtml);}
+function initJobDescriptionEditor(){
+ const editor=$('fDescriptionEditor');if(!editor)return;
+ let savedRange=null;
+ const rememberSelection=()=>{
+  const selection=window.getSelection();
+  if(!selection||!selection.rangeCount)return;
+  const range=selection.getRangeAt(0);
+  if(editor.contains(range.commonAncestorContainer))savedRange=range.cloneRange();
+ };
+ editor.addEventListener('keyup',rememberSelection);
+ editor.addEventListener('mouseup',rememberSelection);
+ editor.addEventListener('touchend',rememberSelection);
+ editor.addEventListener('input',()=>{rememberSelection();getJobDescriptionHtml();});
+ document.addEventListener('selectionchange',rememberSelection);
+ document.querySelectorAll('[data-format]').forEach(button=>{
+  button.addEventListener('mousedown',event=>event.preventDefault());
+  button.addEventListener('click',()=>{
+   editor.focus();
+   const selection=window.getSelection();
+   if(savedRange&&selection){
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
+   }
+   document.execCommand(button.dataset.format,false,null);
+   rememberSelection();
+   getJobDescriptionHtml();
+  });
+ });
+}
 initJobDescriptionEditor();
