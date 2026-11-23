@@ -52,7 +52,19 @@ function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remov
 async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';msg('formMessage','');}
-$('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),city:val('fCity'),area:val('fArea')||null,qualification:val('fQualification'),experience:val('fExperience')||null,employment_type:val('fEmploymentType')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:val('fDescription')||null,status:val('fStatus')};let result;if(editingId)result=await client.from('jobs').update(record).eq('id',editingId);else result=await client.from('jobs').insert(record);if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
+function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\\/$/,'').toLowerCase();}}
+function normalizeDuplicateText(value){return String(value||'').trim().toLowerCase().replace(/\\s+/g,' ');}
+async function findExistingJobDuplicate(record,excludeId=null){
+ const {data,error}=await client.from('jobs').select('id,title,organization,source_url,status');
+ if(error)throw error;
+ const url=normalizeDuplicateUrl(record.source_url);
+ const title=normalizeDuplicateText(record.title),org=normalizeDuplicateText(record.organization);
+ return (data||[]).find(job=>job.id!==excludeId&&(
+  (url&&normalizeDuplicateUrl(job.source_url)===url)||
+  (title&&org&&normalizeDuplicateText(job.title)===title&&normalizeDuplicateText(job.organization)===org)
+ ))||null;
+}
+$('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),city:val('fCity'),area:val('fArea')||null,qualification:val('fQualification'),experience:val('fExperience')||null,employment_type:val('fEmploymentType')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:val('fDescription')||null,status:val('fStatus')};let result;if(editingId){result=await client.from('jobs').update(record).eq('id',editingId);}else{try{const duplicate=await findExistingJobDuplicate(record);if(duplicate){msg('formMessage','Possible duplicate found: "'+duplicate.title+'" at '+duplicate.organization+' already exists (status: '+duplicate.status+'). Review the existing listing before adding another.');if(confirm('A matching job already exists. Would you like to open that existing listing for review instead?'))editJob(duplicate);return;}}catch(error){msg('formMessage','Could not check for duplicates, so the job was not saved: '+error.message);return;}result=await client.from('jobs').insert(record);}if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
 async function loadAdminJobs(){
  const box=$('adminJobs'),expiredBox=$('expiredAdminJobs');
  box.innerHTML='<p>Loading listings…</p>';expiredBox.innerHTML='<p>Loading expired listings…</p>';
@@ -202,14 +214,20 @@ $('importExcelJobs')?.addEventListener('click',async()=>{
  if(!valid.length)return;
  if(!confirm('Import '+valid.length+' valid job(s) as Draft? They will not appear publicly until you publish them.'))return;
  $('importExcelJobs').disabled=true;msg('excelImportMessage','Checking existing listings and importing…');
- const urls=valid.map(x=>x.source_url).filter(Boolean);
  let existing=[];
- if(urls.length){const {data,error}=await client.from('jobs').select('source_url').in('source_url',urls);if(error){msg('excelImportMessage','Could not check duplicates: '+error.message);$('importExcelJobs').disabled=false;return;}existing=(data||[]).map(x=>x.source_url);}
- const fresh=valid.filter(x=>!x.source_url||!existing.includes(x.source_url));
- if(!fresh.length){msg('excelImportMessage','No new jobs imported: all valid source links already exist in the portal.');return;}
+ const {data:existingJobs,error:duplicateCheckError}=await client.from('jobs').select('id,title,organization,source_url');
+ if(duplicateCheckError){msg('excelImportMessage','Could not check existing jobs for duplicates: '+duplicateCheckError.message);$('importExcelJobs').disabled=false;return;}
+ existing=existingJobs||[];
+ const fresh=valid.filter(record=>!existing.some(job=>{
+  const sameUrl=record.source_url&&normalizeDuplicateUrl(record.source_url)===normalizeDuplicateUrl(job.source_url);
+  const sameTitleOrg=normalizeDuplicateText(record.title)===normalizeDuplicateText(job.title)&&normalizeDuplicateText(record.organization)===normalizeDuplicateText(job.organization);
+  return sameUrl||sameTitleOrg;
+ }));
+ const skipped=valid.length-fresh.length;
+ if(!fresh.length){msg('excelImportMessage','No new jobs imported: all valid rows match existing listings by source URL or job title and organization.');$('importExcelJobs').disabled=false;return;}
  const {error}=await client.from('jobs').insert(fresh);
  if(error){msg('excelImportMessage','Import failed: '+error.message);$('importExcelJobs').disabled=false;return;}
- msg('excelImportMessage',`Successfully imported ${fresh.length} job(s) as Draft. ${valid.length-fresh.length} existing source link(s) were skipped.`);
+ msg('excelImportMessage',`Successfully imported ${fresh.length} job(s) as Draft. ${skipped} possible duplicate(s) were skipped based on source URL or job title and organization.`);
  $('jobsExcelFile').value='';$('excelPreview').innerHTML='';excelImportRows=[];await loadAdminJobs();
 });
 
