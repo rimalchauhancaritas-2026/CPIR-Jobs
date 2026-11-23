@@ -278,16 +278,38 @@ window.addEventListener('pagehide',saveAdminScrollPosition);
 window.addEventListener('pageshow',()=>{if($('adminPanel')&&!$('adminPanel').classList.contains('hidden'))restoreAdminScrollPosition();});
 
 
-// Rich-text job description editor: allow only basic safe formatting.
+// Rich-text job description editor: preserve readable text and basic structure
+// from external job pages while removing source-site styling and unsafe markup.
 function sanitizeJobDescription(value){
  const source=String(value||'');
  if(!/[<][a-z][^>]*>/i.test(source))return escapeJobText(source).replace(/\r?\n/g,'<br>');
  const doc=new DOMParser().parseFromString(source,'text/html');
  const allowed=new Set(['B','STRONG','I','EM','BR','P','UL','OL','LI']);
- const clean=node=>{let out='';node.childNodes.forEach(child=>{if(child.nodeType===3){out+=escapeJobText(child.nodeValue);}else if(child.nodeType===1){const inner=clean(child);out+=allowed.has(child.tagName)?'<'+child.tagName.toLowerCase()+'>'+inner+'</'+child.tagName.toLowerCase()+'>':inner;}});return out;};
- return clean(doc.body);
+ const blockTags=new Set(['DIV','SECTION','ARTICLE','HEADER','FOOTER','H1','H2','H3','H4','H5','H6','ADDRESS','BLOCKQUOTE']);
+ const clean=node=>{
+  let out='';
+  node.childNodes.forEach(child=>{
+   if(child.nodeType===3){out+=escapeJobText(child.nodeValue);}
+   else if(child.nodeType===1){
+    const tag=child.tagName;
+    if(['SCRIPT','STYLE','NOSCRIPT','SVG','IFRAME','OBJECT'].includes(tag))return;
+    if(tag==='TR'){
+     const cells=Array.from(child.children).filter(cell=>['TD','TH'].includes(cell.tagName)).map(cell=>clean(cell)).filter(Boolean);
+     if(cells.length)out+='<p>'+cells.join(' | ')+'</p>';
+     return;
+    }
+    const inner=clean(child);
+    if(allowed.has(tag))out+='<'+tag.toLowerCase()+'>'+inner+'</'+tag.toLowerCase()+'>';
+    else if(blockTags.has(tag)&&inner.trim())out+='<p>'+inner+'</p>';
+    else if(['TD','TH'].includes(tag))out+=inner+' | ';
+    else out+=inner;
+   }
+  });
+  return out;
+ };
+ return clean(doc.body).replace(/(?:<br>\s*){3,}/g,'<br><br>').replace(/<p>\s*<\/p>/g,'');
 }
-function escapeJobText(value){return String(value??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));}
+function escapeJobText(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function getJobDescriptionHtml(){const editor=$('fDescriptionEditor');if(!editor)return val('fDescription');const safe=sanitizeJobDescription(editor.innerHTML);$('fDescription').value=safe;return safe;}
 function initJobDescriptionEditor(){
  const editor=$('fDescriptionEditor');if(!editor)return;
@@ -302,6 +324,29 @@ function initJobDescriptionEditor(){
  editor.addEventListener('mouseup',rememberSelection);
  editor.addEventListener('touchend',rememberSelection);
  editor.addEventListener('input',()=>{rememberSelection();getJobDescriptionHtml();});
+ // Paste clean, readable job text instead of inheriting pale colours, highlights,
+ // tiny fonts or layout styles from NJP and other source websites.
+ editor.addEventListener('paste',event=>{
+  const clipboard=event.clipboardData;
+  if(!clipboard)return;
+  const html=clipboard.getData('text/html');
+  const plain=clipboard.getData('text/plain');
+  const cleaned=html?sanitizeJobDescription(html):escapeJobText(plain).replace(/\r?\n/g,'<br>');
+  if(!cleaned)return;
+  event.preventDefault();
+  editor.focus();
+  const selection=window.getSelection();
+  let range=null;
+  if(selection&&selection.rangeCount&&editor.contains(selection.getRangeAt(0).commonAncestorContainer))range=selection.getRangeAt(0);
+  if(!range){range=document.createRange();range.selectNodeContents(editor);range.collapse(false);}
+  range.deleteContents();
+  const fragment=range.createContextualFragment(cleaned);
+  const last=fragment.lastChild;
+  range.insertNode(fragment);
+  if(last){range.setStartAfter(last);range.collapse(true);selection.removeAllRanges();selection.addRange(range);}
+  rememberSelection();
+  getJobDescriptionHtml();
+ });
  document.addEventListener('selectionchange',rememberSelection);
  document.querySelectorAll('[data-format]').forEach(button=>{
   button.addEventListener('mousedown',event=>event.preventDefault());

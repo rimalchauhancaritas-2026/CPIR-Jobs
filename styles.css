@@ -527,3 +527,7 @@ footer{background:#082f57;padding-top:22px}
 
 /* Job description rich-text editor */
 .job-editor-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.job-editor-toolbar button{min-width:88px}.job-description-editor{min-height:180px;padding:13px 15px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#183650;line-height:1.6;outline:none;white-space:normal}.job-description-editor:focus{border-color:#2878b8;box-shadow:0 0 0 3px rgba(40,120,184,.12)}.job-description-editor:empty:before{content:attr(data-placeholder);color:#8996a5;pointer-events:none}.job-description-editor ul,.job-description-editor ol{padding-left:26px;margin:8px 0}.job-description-editor p{margin:6px 0}.job-description-editor li{margin:3px 0}.job-detail p:has(ul),.job-detail p:has(ol){line-height:1.65}
+
+
+/* Keep the legacy storage textarea hidden; the rich-text editor is the only visible field. */
+#fDescription[hidden]{display:none!important}
