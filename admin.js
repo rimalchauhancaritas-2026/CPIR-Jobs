@@ -49,7 +49,7 @@ function startAdminIdleTimer(){
  adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadContactSettings();await loadCandidateUsers();}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';msg('formMessage','');}
 function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\/$/,'').toLowerCase();}}
@@ -103,7 +103,7 @@ async function restoreJob(job){
  if(error){alert('Could not restore this job: '+error.message);return;}
  await loadAdminJobs();
 }
-function editJob(j){if(!j)return;editingId=j.id;const fields={fTitle:'title',fOrg:'organization',fCategory:'category',fCity:'city',fArea:'area',fQualification:'qualification',fExperience:'experience',fEmploymentType:'employment_type',fSalary:'salary',fDeadline:'deadline',fSource:'source',fSourceUrl:'source_url',fApplyUrl:'apply_url',fDescription:'description',fStatus:'status'};Object.entries(fields).forEach(([id,key])=>$(id).value=j[key]??'');$('editId').value=j.id;msg('formMessage','Editing existing listing.');window.scrollTo({top:0,behavior:'smooth'});}
+function editJob(j){if(!j)return;editingId=j.id;const fields={fTitle:'title',fOrg:'organization',fCategory:'category',fCity:'city',fArea:'area',fQualification:'qualification',fExperience:'experience',fEmploymentType:'employment_type',fSalary:'salary',fDeadline:'deadline',fSource:'source',fSourceUrl:'source_url',fApplyUrl:'apply_url',fDescription:'description',fStatus:'status'};Object.entries(fields).forEach(([id,key])=>$(id).value=j[key]??'');$('editId').value=j.id;msg('formMessage','Editing existing listing.');$('jobForm').scrollIntoView({behavior:'smooth',block:'start'});}
 async function deleteJob(id){if(!confirm('Permanently delete this job listing?'))return;const {error}=await client.from('jobs').delete().eq('id',id);if(error)alert('Delete failed: '+error.message);else await loadAdminJobs();}
 init();
 
@@ -253,3 +253,26 @@ document.getElementById('sourceGoToJobForm')?.addEventListener('click',()=>{
 document.getElementById('sourceGoToExcel')?.addEventListener('click',()=>{
  document.getElementById('excelImportPanel')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
+
+
+// Remember the administrator's position while the authenticated panel is in use.
+// The position is scoped to this browser tab and never stores form contents or credentials.
+const ADMIN_SCROLL_KEY='cpir_admin_scroll_y';
+let adminScrollSaveFrame=0;
+function saveAdminScrollPosition(){
+ if(!$('adminPanel')||$('adminPanel').classList.contains('hidden'))return;
+ if(adminScrollSaveFrame)return;
+ adminScrollSaveFrame=requestAnimationFrame(()=>{
+  adminScrollSaveFrame=0;
+  try{sessionStorage.setItem(ADMIN_SCROLL_KEY,String(Math.max(0,window.scrollY||window.pageYOffset||0)));}catch{}
+ });
+}
+function restoreAdminScrollPosition(){
+ let saved=0;
+ try{saved=Number(sessionStorage.getItem(ADMIN_SCROLL_KEY)||0);}catch{}
+ if(!Number.isFinite(saved)||saved<0)return;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:saved,behavior:'auto'})));
+}
+window.addEventListener('scroll',saveAdminScrollPosition,{passive:true});
+window.addEventListener('pagehide',saveAdminScrollPosition);
+window.addEventListener('pageshow',()=>{if($('adminPanel')&&!$('adminPanel').classList.contains('hidden'))restoreAdminScrollPosition();});
