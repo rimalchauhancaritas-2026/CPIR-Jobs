@@ -29,12 +29,8 @@
 <div class="admin-tab-panel" data-admin-panel="collector"><section class="info-card" id="smartCollectorPanel" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
  <div class="section-heading"><div><p class="eyebrow">AUTOMATED COLLECTION WORKSPACE</p><h2>Smart Job Collector</h2><p>Approved source feeds will place matching vacancies here for Caritas review. No vacancy is published automatically.</p></div></div>
  <div class="source-notice"><strong>Collection rules:</strong> Rawalpindi and Islamabad only. Expired vacancies and duplicates are excluded or flagged. Each listing must retain its original source link. A daily scheduled collector will only be activated for sources that provide an approved API, RSS/feed, employer feed, email alert, or written permission. Sample records are clearly marked and can never be moved into live Draft jobs.</div>
- <div id="collectorSourceStatus" class="source-grid">
-  <article class="source-card"><h3>National Jobs Portal</h3><p>Connector: awaiting confirmation of an approved data feed or access method.</p><span class="status-pill">Permission / feed check required</span></article>
-  <article class="source-card"><h3>ROZEE.PK</h3><p>Connector: partner/API/feed access needs confirmation.</p><span class="status-pill">Permission / feed check required</span></article>
-  <article class="source-card"><h3>Mustakbil</h3><p>Automated harvesting is not enabled; use only a provider-approved integration.</p><span class="status-pill">Automated access disabled</span></article>
-  <article class="source-card"><h3>Indeed, newspapers and employers</h3><p>Will be connected individually when an approved feed, API, or alert source is available.</p><span class="status-pill">Connector not yet configured</span></article>
- </div>
+ <div class="source-workflow"><h3>Source Registry</h3><p>Manage each provider's approved connection here. Mark a source as <strong>Approved</strong> only after written permission or a clearly permitted API/feed is confirmed. Enabling a source does not start collection until a server-side connector is built and tested.</p></div>
+ <div id="collectorSourcesList" class="source-grid"><p>Loading registered sources…</p></div>
  <div class="source-actions"><button class="secondary-btn" type="button" id="loadCollectorSamples">Load sample vacancies (test only)</button><button class="secondary-btn" type="button" id="refreshFetchedJobs">Refresh fetched jobs</button><button class="secondary-btn" type="button" id="downloadFetchedSelected" disabled>Download selected as Excel</button><button class="primary-btn" type="button" id="reviewFetchedSelected" disabled>Move selected to Draft jobs</button></div>
  <p id="fetchedJobsMessage" role="status"></p>
  <div id="fetchedJobsList"><p>Fetched vacancies will appear here after an approved source connector is activated.</p></div>
