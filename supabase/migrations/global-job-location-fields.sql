@@ -19,16 +19,16 @@ alter table public.jobs
   drop constraint if exists jobs_location_scope_check;
 alter table public.jobs
   add constraint jobs_location_scope_check
-  check (location_scope in ('local','international','remote_pakistan','remote_worldwide'));
+  check (location_scope in ('local','rawalpindi','islamabad','international','remote_pakistan','remote_worldwide'));
 
 alter table public.fetched_jobs
   drop constraint if exists fetched_jobs_location_scope_check;
 alter table public.fetched_jobs
   add constraint fetched_jobs_location_scope_check
-  check (location_scope in ('local','international','remote_pakistan','remote_worldwide'));
+  check (location_scope in ('local','rawalpindi','islamabad','international','remote_pakistan','remote_worldwide'));
 
 comment on column public.jobs.location_scope is
-  'Classification: local Rawalpindi/Islamabad, international/overseas, remote Pakistan-eligible, or remote worldwide-eligible.';
+  'New listings use exactly three location types: Rawalpindi, Islamabad, or International. Legacy local and remote values remain accepted for existing records.';
 comment on column public.jobs.country is 'Actual country for an on-site/hybrid vacancy; Pakistan or stated eligible region for remote vacancies.';
 comment on column public.jobs.remote_eligibility is 'Explicit countries or residency regions eligible to apply for a remote vacancy.';
 comment on column public.jobs.visa_work_authorization is 'Employer-stated visa sponsorship and work authorization requirements.';
