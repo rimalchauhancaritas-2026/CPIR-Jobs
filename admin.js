@@ -215,3 +215,23 @@ $('importExcelJobs')?.addEventListener('click',async()=>{
 
 async function sendAdminPasswordReset(){const email=val('email');if(!email){msg('loginMessage','Enter your administrator email address first.');return;}msg('loginMessage','Requesting password reset…');try{const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:'https://rimalchauhancaritas-2026.github.io/CPIR-Jobs/admin.html'});msg('loginMessage',error?error.message:'If this email belongs to an administrator account, a password reset link has been sent. Check your inbox and spam folder.');}catch(error){msg('loginMessage','Could not reach the password reset service. Check your internet connection and try again.');console.error(error);}}
 async function saveAdminNewPassword(e){e.preventDefault();const password=$('adminNewPassword').value;if(password.length<8){msg('adminRecoveryMessage','Use at least 8 characters.');return;}msg('adminRecoveryMessage','Saving new password…');try{const {error}=await client.auth.updateUser({password});if(error){msg('adminRecoveryMessage',error.message);return;}msg('adminRecoveryMessage','Password updated. Signing you in…');$('adminRecoveryPanel').classList.add('hidden');await checkSession();}catch(error){msg('adminRecoveryMessage','Could not update the password. Please open the reset link again and retry.');console.error(error);}}
+
+
+// Staff-assisted job-source collection helpers. These controls only prefill
+// the source name; staff must paste the exact vacancy URL and verify the job.
+document.querySelectorAll('[data-source-name]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  const field=document.getElementById('fSource');
+  if(field){field.value=button.dataset.sourceName||'';field.focus();}
+  document.getElementById('jobForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+  const note=document.getElementById('formMessage');
+  if(note)note.textContent='Source selected. Paste the exact vacancy page URL in Source URL after checking the original advertisement.';
+ });
+});
+document.getElementById('sourceGoToJobForm')?.addEventListener('click',()=>{
+ document.getElementById('jobForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+ document.getElementById('fTitle')?.focus({preventScroll:true});
+});
+document.getElementById('sourceGoToExcel')?.addEventListener('click',()=>{
+ document.getElementById('excelImportPanel')?.scrollIntoView({behavior:'smooth',block:'start'});
+});
