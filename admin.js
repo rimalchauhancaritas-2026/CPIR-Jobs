@@ -49,7 +49,7 @@ function startAdminIdleTimer(){
  adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadCollectorSources();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';if($('fDescriptionEditor'))$('fDescriptionEditor').innerHTML='';msg('formMessage','');}
 function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\/$/,'').toLowerCase();}}
@@ -394,6 +394,51 @@ initJobDescriptionEditor();
   }finally{button.disabled=false;}
  });
 
+// Admin-managed source registry. Approval is an explicit administrator action;
+// sources remain disabled by default and no browser-side scraping is performed.
+const collectorSourceLabels={
+ njp:"National Jobs Portal",rozee:"ROZEE.PK",mustakbil:"Mustakbil",
+ indeed:"Indeed Pakistan",newspapers:"Newspaper vacancy feeds",employers:"Employer career pages and feeds"
+};
+const collectorMethodLabels={not_configured:"Not configured",rss:"RSS feed",api:"Official API",partner_feed:"Approved partner feed",email_alert:"Authorized email alert",manual_test:"Manual test only"};
+const collectorStatusLabels={permission_pending:"Permission pending",approved:"Approved",not_permitted:"Not permitted",testing:"Testing"};
+async function loadCollectorSources(){
+ const box=$("collectorSourcesList");if(!box||!client)return;
+ box.innerHTML="<p>Loading source registry…</p>";
+ const {data,error}=await client.from("collector_sources").select("*").order("display_name");
+ if(error){box.innerHTML='<div class="source-notice">Source Registry could not load. Confirm that <strong>smart-job-collector-engine-setup.sql</strong> was run successfully. Details: '+esc(error.message)+'</div>';return;}
+ if(!data||!data.length){box.innerHTML='<div class="source-notice">No source records found. Run the Smart Job Collector engine setup migration.</div>';return;}
+ box.innerHTML=data.map(source=>{
+  const methodOptions=Object.entries(collectorMethodLabels).map(([value,label])=>'<option value="'+value+'" '+(source.access_method===value?'selected':'')+'>'+label+'</option>').join("");
+  const statusOptions=Object.entries(collectorStatusLabels).map(([value,label])=>'<option value="'+value+'" '+(source.access_status===value?'selected':'')+'>'+label+'</option>').join("");
+  return '<article class="source-card" data-collector-source="'+esc(source.source_key)+'"><h3>'+esc(source.display_name)+'</h3><p>Access status: <span class="status-pill">'+esc(collectorStatusLabels[source.access_status]||source.access_status)+'</span> '+(source.enabled?'<span class="status-pill">Enabled</span>':'<span class="status-pill">Disabled</span>')+(source.schedule_enabled?' <span class="status-pill">Daily schedule requested</span>':'')+'</p>'+
+   '<label>Connection method<select data-field="access_method">'+methodOptions+'</select></label>'+
+   '<label>Permission status<select data-field="access_status">'+statusOptions+'</select></label>'+
+   '<label>Approved feed / API URL<input data-field="feed_url" type="url" maxlength="1000" placeholder="https://… (only an authorized feed/API)" value="'+esc(source.feed_url||'')+'"></label>'+
+   '<label>Admin notes<textarea data-field="notes" rows="2" maxlength="1200" placeholder="Permission reference, contact, restrictions…">'+esc(source.notes||'')+'</textarea></label>'+
+   '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input data-field="enabled" type="checkbox" '+(source.enabled?'checked':'')+'> Enable this source for a future approved connector</label>'+
+   '<label style="display:flex;gap:8px;align-items:center"><input data-field="schedule_enabled" type="checkbox" '+(source.schedule_enabled?'checked':'')+'> Include in daily schedule (after connector is deployed)</label>'+
+   '<button type="button" class="secondary-btn" data-save-collector-source="'+esc(source.source_key)+'">Save source settings</button>'+
+   '<p class="source-footnote">'+(source.last_checked_at?'Last checked: '+esc(new Date(source.last_checked_at).toLocaleString()):'Not checked yet')+(source.last_error?' · Last error: '+esc(source.last_error):'')+'</p></article>';
+ }).join("");
+ box.querySelectorAll("[data-save-collector-source]").forEach(button=>button.addEventListener("click",async()=>{
+  const card=button.closest("[data-collector-source]");const read=name=>card.querySelector('[data-field="'+name+'"]');
+  const method=read("access_method").value,status=read("access_status").value;
+  const enabled=read("enabled").checked,schedule=read("schedule_enabled").checked;
+  const feedUrl=read("feed_url").value.trim();
+  if(enabled&&status!=="approved"){alert("This source cannot be enabled until its access status is Approved.");return;}
+  if(schedule&&!enabled){alert("Enable the source before adding it to the daily schedule.");return;}
+  if(enabled&&["rss","api","partner_feed","email_alert"].includes(method)&&!/^https:\/\//i.test(feedUrl)){alert("Enter the HTTPS URL of the approved feed/API before enabling this source.");return;}
+  if(enabled&&method==="not_configured"){alert("Choose the approved connection method before enabling this source.");return;}
+  button.disabled=true;button.textContent="Saving…";
+  const payload={access_method:method,access_status:status,feed_url:feedUrl||null,notes:read("notes").value.trim()||null,enabled,schedule_enabled:schedule,updated_at:new Date().toISOString()};
+  const {error:saveError}=await client.from("collector_sources").update(payload).eq("source_key",button.dataset.saveCollectorSource);
+  button.disabled=false;button.textContent="Save source settings";
+  if(saveError){alert("Could not save source settings: "+saveError.message);return;}
+  await loadCollectorSources();
+  msg("fetchedJobsMessage","Source settings saved. No external collection was started.");
+ }));
+}
 // Smart Job Collector review queue. Source ingestion is server-side and is
 // deliberately disabled until each provider's permitted feed/API is configured.
 let fetchedJobsCache=[];
