@@ -1,4 +1,5 @@
 let client=null,currentUser=null,cropper=null,photoDataUrl=null,photoPath=null,removePhotoRequested=false;
+let accountPhotoCropper=null,accountPhotoBlob=null,accountPhotoObjectUrl=null;
 const $=id=>document.getElementById(id);
 const say=(id,msg)=>{if($(id))$(id).textContent=msg;};
 const repeatConfig={educationEntries:{label:'Qualification',min:3,placeholder:'Degree | Institution | Year | Grade'},experienceEntries:{label:'Experience',min:3,placeholder:'Job title | Organization | Dates | Responsibilities'},skillsEntries:{label:'Skill',min:3,placeholder:'Communication, MS Office, teamwork'},languageEntries:{label:'Language',min:2,placeholder:'Urdu — Fluent'},trainingEntries:{label:'Certificate / Training',min:2,placeholder:'Course | Institute | Year'},referenceEntries:{label:'Reference',min:1,placeholder:'Name | Designation | Organization | Contact'}};
@@ -81,13 +82,39 @@ async function saveAlertPreferences(){
 }
 
 function initAccountPhotoControls(){
- $('accountPhotoInput').addEventListener('change',()=>{const file=$('accountPhotoInput').files?.[0];if(!file)return;if(!['image/jpeg','image/png'].includes(file.type)){say('accountPhotoMessage','Please choose a JPG or PNG image.');$('accountPhotoInput').value='';return;}if(file.size>3*1024*1024){say('accountPhotoMessage','The photograph must be smaller than 3 MB.');$('accountPhotoInput').value='';return;}const reader=new FileReader();reader.onload=()=>setAccountPhotoPreview(reader.result);reader.readAsDataURL(file);});
+ $('accountPhotoInput').addEventListener('change',openAccountPhotoCrop);
  $('saveAccountPhoto').addEventListener('click',saveAccountPhoto);
  $('removeAccountPhoto').addEventListener('click',removeAccountPhoto);
+ $('accountApplyCrop').addEventListener('click',applyAccountPhotoCrop);
+ $('accountCancelCrop').addEventListener('click',()=>{closeAccountPhotoCrop();$('accountPhotoInput').value='';});
+ $('accountZoomIn').addEventListener('click',()=>accountPhotoCropper?.zoom(.1));
+ $('accountZoomOut').addEventListener('click',()=>accountPhotoCropper?.zoom(-.1));
+}
+function openAccountPhotoCrop(e){
+ const file=e.target.files?.[0];if(!file)return;
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)){say('accountPhotoMessage','Please choose a JPG, PNG or WebP image.');$('accountPhotoInput').value='';return;}
+ if(file.size>3*1024*1024){say('accountPhotoMessage','The photograph must be smaller than 3 MB.');$('accountPhotoInput').value='';return;}
+ if(!window.Cropper){say('accountPhotoMessage','The photo editor could not load. Please refresh and try again.');$('accountPhotoInput').value='';return;}
+ if(accountPhotoObjectUrl)URL.revokeObjectURL(accountPhotoObjectUrl);
+ accountPhotoObjectUrl=URL.createObjectURL(file);
+ $('accountCropImage').src=accountPhotoObjectUrl;
+ if(accountPhotoCropper){accountPhotoCropper.destroy();accountPhotoCropper=null;}
+ try{
+  $('accountCropModal').classList.remove('hidden');
+  accountPhotoCropper=new Cropper($('accountCropImage'),{aspectRatio:NaN,viewMode:1,dragMode:'crop',autoCropArea:.9,responsive:true,background:false,zoomOnWheel:true,movable:true,zoomable:true,cropBoxResizable:true,rotatable:false,scalable:false});
+  say('accountPhotoMessage','Adjust the crop box freely, move your face and zoom as needed. Choose Use this photo when ready.');
+ }catch(error){closeAccountPhotoCrop();$('accountPhotoInput').value='';say('accountPhotoMessage','The photo editor could not start. Please refresh and try again.');console.error('Account photo crop editor error:',error);}
+}
+function closeAccountPhotoCrop(){$('accountCropModal').classList.add('hidden');if(accountPhotoCropper){accountPhotoCropper.destroy();accountPhotoCropper=null;}if(accountPhotoObjectUrl){URL.revokeObjectURL(accountPhotoObjectUrl);accountPhotoObjectUrl=null;}}
+function applyAccountPhotoCrop(){
+ if(!accountPhotoCropper)return;
+ const canvas=accountPhotoCropper.getCroppedCanvas({maxWidth:2400,maxHeight:2400,imageSmoothingEnabled:true,imageSmoothingQuality:'high'});
+ if(!canvas){say('accountPhotoMessage','Could not crop this photograph. Please try again.');return;}
+ canvas.toBlob(blob=>{if(!blob){say('accountPhotoMessage','Could not prepare this photograph.');return;}accountPhotoBlob=blob;setAccountPhotoPreview(URL.createObjectURL(blob));$('saveAccountPhoto').disabled=false;closeAccountPhotoCrop();say('accountPhotoMessage','Photo crop ready. Review it and click Save profile photograph.');},'image/jpeg',.92);
 }
 function setAccountPhotoPreview(src){const img=$('accountPhotoPreview'),placeholder=$('accountPhotoPlaceholder');if(!img||!placeholder)return;if(src){img.src=src;img.classList.remove('hidden');placeholder.classList.add('hidden');}else{img.removeAttribute('src');img.classList.add('hidden');placeholder.classList.remove('hidden');}if($('removeAccountPhoto'))$('removeAccountPhoto').disabled=!src;setCandidateNavPhoto(src);}
 async function loadAccountPhoto(user){const path=user?.user_metadata?.account_photo_path;if(!path){setAccountPhotoPreview(null);return;}const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);if(error){say('accountPhotoMessage','Saved account photograph could not be loaded.');setAccountPhotoPreview(null);return;}setAccountPhotoPreview(data.signedUrl);}
-async function saveAccountPhoto(){if(!currentUser)return;const file=$('accountPhotoInput').files?.[0];if(!file){say('accountPhotoMessage','Choose a photograph first.');return;}const path=currentUser.id+'/account-profile.jpg';say('accountPhotoMessage','Uploading account photograph…');$('saveAccountPhoto').disabled=true;const {error:uploadError}=await client.storage.from('candidate-photos').upload(path,file,{contentType:file.type,upsert:true});if(uploadError){say('accountPhotoMessage','Could not upload photograph: '+uploadError.message);$('saveAccountPhoto').disabled=false;return;}const {data,error}=await client.auth.updateUser({data:{account_photo_path:path}});$('saveAccountPhoto').disabled=false;if(error){say('accountPhotoMessage','Photo uploaded, but account profile could not be updated: '+error.message);return;}currentUser=data.user;const {data:signed}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);setAccountPhotoPreview(signed?.signedUrl||URL.createObjectURL(file));$('accountPhotoInput').value='';say('accountPhotoMessage','Your account profile photograph has been saved.');}
+async function saveAccountPhoto(){if(!currentUser)return;if(!accountPhotoBlob){say('accountPhotoMessage','Choose a photograph and confirm its crop first.');return;}const path=currentUser.id+'/account-profile.jpg';say('accountPhotoMessage','Uploading account photograph…');$('saveAccountPhoto').disabled=true;const {error:uploadError}=await client.storage.from('candidate-photos').upload(path,accountPhotoBlob,{contentType:'image/jpeg',upsert:true});if(uploadError){say('accountPhotoMessage','Could not upload photograph: '+uploadError.message);$('saveAccountPhoto').disabled=false;return;}const {data,error}=await client.auth.updateUser({data:{account_photo_path:path}});$('saveAccountPhoto').disabled=false;if(error){say('accountPhotoMessage','Photo uploaded, but account profile could not be updated: '+error.message);return;}currentUser=data.user;accountPhotoBlob=null;const {data:signed}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);setAccountPhotoPreview(signed?.signedUrl||$('accountPhotoPreview').src);$('accountPhotoInput').value='';say('accountPhotoMessage','Your account profile photograph has been saved.');}
 async function removeAccountPhoto(){if(!currentUser)return;const path=currentUser.user_metadata?.account_photo_path;if(!path)return;say('accountPhotoMessage','Removing account photograph…');$('removeAccountPhoto').disabled=true;const {error:removeError}=await client.storage.from('candidate-photos').remove([path]);if(removeError){say('accountPhotoMessage','Could not remove photograph: '+removeError.message);$('removeAccountPhoto').disabled=false;return;}const {data,error}=await client.auth.updateUser({data:{account_photo_path:null}});if(error){say('accountPhotoMessage','Photo removed from storage, but account could not be updated: '+error.message);return;}currentUser=data.user;setAccountPhotoPreview(null);say('accountPhotoMessage','Account profile photograph removed.');}
 async function loadSavedPhoto(path){
  const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);
