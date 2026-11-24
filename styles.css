@@ -607,3 +607,7 @@ body.disclaimer-open{overflow:hidden}
   .disclaimer-dialog h2{font-size:22px}
   .disclaimer-popup-scroll{max-height:36vh}
 }
+
+/* Latest Jobs location tabs */
+.job-location-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.job-location-tab{appearance:none;border:1px solid #cbd9e7;background:#fff;color:#234665;border-radius:8px;padding:11px 18px;font:700 13px 'DM Sans',sans-serif;cursor:pointer;transition:background .18s,border-color .18s,color .18s}.job-location-tab:hover{border-color:#0878c9;color:#0878c9}.job-location-tab.active{background:#0878c9;border-color:#0878c9;color:#fff;box-shadow:0 3px 10px #0878c933}.job-location-tab:focus-visible{outline:3px solid #9bd4fa;outline-offset:2px}
+@media(max-width:520px){.job-location-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.job-location-tab{padding:10px 8px;font-size:12px}}
