@@ -137,9 +137,9 @@ function classifyPakistanRegion(job: Record<string, unknown>, cityNames: string[
     cleanText(province), eligibility, cleanText(job.title), cleanText(job.description),
     cleanText(job.region), cleanText(job.location), cityNames.join(" "),
   ].join(" ").toLowerCase();
+  if (/all pakistan|nationwide|across pakistan|anywhere in pakistan|all over pakistan/.test(allText)) return "nationwide";
   const provinceValue = provinceRegion(province) || provinceRegion(allText);
   if (provinceValue) return provinceValue;
-  if (/all pakistan|nationwide|across pakistan|anywhere in pakistan|all over pakistan/.test(allText)) return "nationwide";
   if (cityNames.some((city) => /rawalpindi|islamabad/i.test(city))) return "city_specific";
   return "needs_review";
 }
@@ -183,9 +183,9 @@ async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
       const city = cities.length > 1 ? "Multiple locations" : (cities[0] || "Location to be confirmed");
       const province = firstValue(item.province, item.province_name, item.province_slug);
       const recruitmentRegion = classifyPakistanRegion(item, cities);
-      const localCity = cities.find((name) => /rawalpindi/i.test(name)) ? "rawalpindi"
-        : cities.find((name) => /islamabad/i.test(name)) ? "islamabad" : "";
-      const locationScope = localCity || (recruitmentRegion === "city_specific" ? "pakistan" : "pakistan");
+      const localCity = cities.length === 1 && /rawalpindi/i.test(cities[0]) ? "rawalpindi"
+        : cities.length === 1 && /islamabad/i.test(cities[0]) ? "islamabad" : "";
+      const locationScope = localCity || "pakistan";
       const deadline = dateOnly(firstValue(item.deadline, item.last_date, item.application_deadline, item.closing_date));
       const published = dateOnly(firstValue(item.published_at, item.publication_date, item.posted_at, item.posted_date));
       const officialApply = cleanText(firstValue(item.official_source_url, item.application_url, item.apply_url, item.apply_link));
