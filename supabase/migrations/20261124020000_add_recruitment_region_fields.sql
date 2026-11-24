@@ -65,3 +65,19 @@ comment on column public.jobs.application_eligibility is
   'Domicile, district, province, CNIC or other applicant eligibility stated in the original advertisement.';
 comment on column public.jobs.application_instructions is
   'Verified instructions for applying, including district quota or regional application steps when specified.';
+
+-- SkillzDunya offers a public read-only jobs API. Keep it disabled until an
+-- administrator tests and enables it in the Smart Job Collector registry.
+insert into public.collector_sources
+  (source_key, display_name, access_method, access_status, feed_url, enabled, schedule_enabled, notes)
+values
+  ('skillzdunya', 'SkillzDunya', 'api', 'approved',
+   'https://skillzdunya.com/api/v1/jobs', false, false,
+   'Public Pakistan Jobs API; no API key required. Search Rawalpindi, Islamabad, Punjab and the general Pakistan feed. Preserve attribution to SkillzDunya and link each listing to its canonical SkillzDunya job page. Verify the linked official advertisement, deadline, province and domicile/district eligibility before import. API documentation: https://skillzdunya.com/jobs-api')
+on conflict (source_key) do update set
+  display_name = excluded.display_name,
+  access_method = excluded.access_method,
+  access_status = excluded.access_status,
+  feed_url = excluded.feed_url,
+  notes = excluded.notes,
+  updated_at = now();
