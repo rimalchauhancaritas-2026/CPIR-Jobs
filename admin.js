@@ -48,8 +48,43 @@ function bindAdminActivityTracking(){
 function startAdminIdleTimer(){
  adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
-function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadCollectorSources();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
+function initAdminPhotoControls(){
+ $('adminPhotoInput').addEventListener('change',()=>{const file=$('adminPhotoInput').files?.[0];if(!file)return;if(!['image/jpeg','image/png'].includes(file.type)){msg('adminPhotoMessage','Please choose a JPG or PNG image.');$('adminPhotoInput').value='';return;}if(file.size>3*1024*1024){msg('adminPhotoMessage','The photograph must be smaller than 3 MB.');$('adminPhotoInput').value='';return;}const reader=new FileReader();reader.onload=()=>{const image=$('adminPhotoPreview');image.src=reader.result;image.classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');};reader.readAsDataURL(file);msg('adminPhotoMessage','Ready to save.');});
+ $('saveAdminPhotoBtn').addEventListener('click',saveAdminPhoto);
+ $('removeAdminPhotoBtn').addEventListener('click',removeAdminPhoto);
+}
+async function loadAdminPhoto(user){
+ const path=user?.user_metadata?.admin_photo_path||null;
+ $('adminPhotoInput').value='';
+ if(!path){$('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');$('removeAdminPhotoBtn').disabled=true;return;}
+ const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);
+ if(error){msg('adminPhotoMessage','Saved photo could not be loaded. You can upload it again.');return;}
+ $('adminPhotoPreview').src=data.signedUrl;$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');$('removeAdminPhotoBtn').disabled=false;
+}
+async function saveAdminPhoto(){
+ const {data:{user}}=await client.auth.getUser(),file=$('adminPhotoInput').files?.[0];
+ if(!user||!file){msg('adminPhotoMessage','Choose a photograph first.');return;}
+ const path=user.id+'/admin-profile.jpg',blob=file;
+ msg('adminPhotoMessage','Uploading photograph…');$('saveAdminPhotoBtn').disabled=true;
+ const {error:uploadError}=await client.storage.from('candidate-photos').upload(path,blob,{contentType:file.type,upsert:true});
+ if(uploadError){msg('adminPhotoMessage','Could not upload photograph: '+uploadError.message);$('saveAdminPhotoBtn').disabled=false;return;}
+ const {data,error}=await client.auth.updateUser({data:{admin_photo_path:path}});
+ $('saveAdminPhotoBtn').disabled=false;
+ if(error){msg('adminPhotoMessage','Photo uploaded but profile could not be updated: '+error.message);return;}
+ $('adminPhotoPreview').src=URL.createObjectURL(file);$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');$('removeAdminPhotoBtn').disabled=false;$('adminPhotoInput').value='';msg('adminPhotoMessage','Your administrator profile photograph has been saved.');
+}
+async function removeAdminPhoto(){
+ const {data:{user}}=await client.auth.getUser();if(!user)return;
+ const path=user.user_metadata?.admin_photo_path;if(!path)return;
+ $('removeAdminPhotoBtn').disabled=true;msg('adminPhotoMessage','Removing photograph…');
+ const {error:removeError}=await client.storage.from('candidate-photos').remove([path]);
+ if(removeError){$('removeAdminPhotoBtn').disabled=false;msg('adminPhotoMessage','Could not remove photograph: '+removeError.message);return;}
+ const {error}=await client.auth.updateUser({data:{admin_photo_path:null}});
+ if(error){msg('adminPhotoMessage','Photo removed from storage, but profile metadata could not be updated: '+error.message);return;}
+ $('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');msg('adminPhotoMessage','Administrator photograph removed.');
+}
+function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();initAdminPhotoControls();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
+async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');await loadAdminPhoto(session.user);startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadCollectorSources();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';if($('fDescriptionEditor'))$('fDescriptionEditor').innerHTML='';msg('formMessage','');}
 function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\/$/,'').toLowerCase();}}
