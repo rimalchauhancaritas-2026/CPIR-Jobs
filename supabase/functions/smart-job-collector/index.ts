@@ -27,6 +27,9 @@ type FetchedRecord = {
   organization: string;
   category: string;
   location_scope: string;
+  recruitment_region: string;
+  application_eligibility: string | null;
+  application_instructions: string | null;
   city: string;
   country: string | null;
   remote_eligibility: string | null;
@@ -122,6 +125,9 @@ async function fetchJobicy(source: SourceRow): Promise<FetchedRecord[]> {
       organization: cleanText(job.companyName),
       category: "Private",
       location_scope: "international",
+      recruitment_region: "international",
+      application_eligibility: geo,
+      application_instructions: null,
       city: "Remote",
       country: null,
       remote_eligibility: geo,
@@ -185,6 +191,9 @@ async function fetchRemoteOk(source: SourceRow): Promise<FetchedRecord[]> {
       organization: stripHtml(company),
       category: "Private",
       location_scope: "international",
+      recruitment_region: "international",
+      application_eligibility: location || "Verify eligible countries in the original listing",
+      application_instructions: null,
       city: "Remote",
       country: null,
       remote_eligibility: location || "Remote role — verify eligible countries in the original listing",
