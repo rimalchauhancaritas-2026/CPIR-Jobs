@@ -118,11 +118,16 @@ function listText(value: unknown): string[] {
     }
     return cleanText(item);
   }).filter(Boolean);
+  if (value && typeof value === "object") {
+    const row = value as Record<string, unknown>;
+    const label = cleanText(firstValue(row.name, row.title, row.label, row.city, row.slug));
+    return label ? [label] : [];
+  }
   return cleanText(value) ? [cleanText(value)] : [];
 }
 
 function provinceRegion(value: unknown): string | null {
-  const text = cleanText(value).toLowerCase().replace(/[_-]+/g, " ");
+  const text = listText(value).join(" ").toLowerCase().replace(/[_-]+/g, " ");
   if (/\bkpk\b|khyber\s*pakhtunkhwa|north west frontier/.test(text)) return "khyber_pakhtunkhwa";
   if (/\bbalochistan\b/.test(text)) return "balochistan";
   if (/\bsindh\b/.test(text)) return "sindh";
