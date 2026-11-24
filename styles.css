@@ -174,7 +174,7 @@ footer{background:#082f57;padding-top:22px}
 .photo-upload-controls small{color:#718397}
 .photo-upload-controls input{max-width:280px}
 .photo-upload-controls button{justify-self:start}
-.crop-modal{position:fixed;inset:0;z-index:1000;background:#071d32cc;display:flex;align-items:center;justify-content:center;padding:18px}
+.crop-modal{position:fixed;inset:0;z-index:1000;background:#071d32cc;display:flex;align-items:center;justify-content:center;padding:18px}.crop-modal.hidden{display:none!important}
 .crop-dialog{width:min(680px,100%);background:#fff;border-radius:15px;padding:22px;box-shadow:0 20px 60px #0005}
 .crop-dialog h2{margin:0;color:#082f55}
 .crop-dialog p{color:#61758a;margin:6px 0 16px}
