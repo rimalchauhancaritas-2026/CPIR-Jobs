@@ -64,7 +64,7 @@ async function findExistingJobDuplicate(record,excludeId=null){
   (title&&org&&normalizeDuplicateText(job.title)===title&&normalizeDuplicateText(job.organization)===org)
  ))||null;
 }
-$('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),posted_at:val('fPostedDate')||null,location_scope:val('fLocationScope'),city:val('fCity'),recruitment_region:val('fRecruitmentRegion'),application_eligibility:val('fApplicationEligibility')||null,application_instructions:val('fApplicationInstructions')||null,country:val('fCountry')||null,remote_eligibility:val('fRemoteEligibility')||null,work_arrangement:val('fWorkArrangement')||null,visa_work_authorization:val('fVisaInfo')||null,area:val('fArea')||null,qualification:val('fQualification'),experience:val('fExperience')||null,employment_type:val('fEmploymentType')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:getJobDescriptionHtml()||null,status:val('fStatus')};const scope=record.location_scope;if(!record.city&&scope==='rawalpindi')record.city='Rawalpindi';if(!record.city&&scope==='islamabad')record.city='Islamabad';if(scope==='international')record.recruitment_region='international';if(scope!=='international'&&record.recruitment_region==='international'){msg('formMessage','Select a Pakistani recruitment region for a Pakistan-based vacancy.');return;}if(scope==='pakistan'&&!record.city){msg('formMessage','Enter the actual city or use Multiple Locations for a Pakistan-wide listing.');return;}if(scope==='pakistan'&&record.status==='published'&&['sindh','khyber_pakhtunkhwa','balochistan'].includes(record.recruitment_region)){msg('formMessage','This province-only region is saved for future expansion and is not included in the current Rawalpindi–Islamabad portal. Keep it as a Draft for now.');return;}if(scope==='international'&&!record.city)record.city=record.remote_eligibility?'Remote':(record.country||'');if(scope==='international'&&!record.country&&!record.remote_eligibility){msg('formMessage','For an International job, enter its country or specify the remote eligibility.');return;}if(record.recruitment_region==='needs_review'&&record.status==='published'){msg('formMessage','Please confirm the recruitment region before publishing this job. Keep it as a Draft until verified.');return;}let result;if(editingId){result=await client.from('jobs').update(record).eq('id',editingId);}else{try{const duplicate=await findExistingJobDuplicate(record);if(duplicate){msg('formMessage','Possible duplicate found: "'+duplicate.title+'" at '+duplicate.organization+' already exists (status: '+duplicate.status+'). Review the existing listing before adding another.');if(confirm('A matching job already exists. Would you like to open that existing listing for review instead?'))editJob(duplicate);return;}}catch(error){msg('formMessage','Could not check for duplicates, so the job was not saved: '+error.message);return;}result=await client.from('jobs').insert(record);}if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
+$('jobForm').addEventListener('submit',async e=>{e.preventDefault();if(!client)return;const record={title:val('fTitle'),organization:val('fOrg'),category:val('fCategory'),posted_at:val('fPostedDate')||null,location_scope:val('fLocationScope'),city:val('fCity'),recruitment_region:val('fRecruitmentRegion'),application_eligibility:val('fApplicationEligibility')||null,application_instructions:val('fApplicationInstructions')||null,country:val('fCountry')||null,remote_eligibility:val('fRemoteEligibility')||null,work_arrangement:val('fWorkArrangement')||null,visa_work_authorization:val('fVisaInfo')||null,area:val('fArea')||null,qualification:val('fQualification')||'Not specified',experience:val('fExperience')||null,employment_type:val('fEmploymentType')||null,salary:val('fSalary')||null,deadline:val('fDeadline')||null,source:val('fSource')||null,source_url:val('fSourceUrl')||null,apply_url:val('fApplyUrl')||null,description:getJobDescriptionHtml()||null,status:val('fStatus')};const scope=record.location_scope;if(!record.city&&scope==='rawalpindi')record.city='Rawalpindi';if(!record.city&&scope==='islamabad')record.city='Islamabad';if(scope==='international')record.recruitment_region='international';if(scope!=='international'&&record.recruitment_region==='international'){msg('formMessage','Select a Pakistani recruitment region for a Pakistan-based vacancy.');return;}if(scope==='pakistan'&&!record.city){msg('formMessage','Enter the actual city or use Multiple Locations for a Pakistan-wide listing.');return;}if(scope==='pakistan'&&record.status==='published'&&['sindh','khyber_pakhtunkhwa','balochistan'].includes(record.recruitment_region)){msg('formMessage','This province-only region is saved for future expansion and is not included in the current Rawalpindi–Islamabad portal. Keep it as a Draft for now.');return;}if(scope==='international'&&!record.city)record.city=record.remote_eligibility?'Remote':(record.country||'');if(scope==='international'&&!record.country&&!record.remote_eligibility){msg('formMessage','For an International job, enter its country or specify the remote eligibility.');return;}if(record.recruitment_region==='needs_review'&&record.status==='published'){msg('formMessage','Please confirm the recruitment region before publishing this job. Keep it as a Draft until verified.');return;}let result;if(editingId){result=await client.from('jobs').update(record).eq('id',editingId);}else{try{const duplicate=await findExistingJobDuplicate(record);if(duplicate){msg('formMessage','Possible duplicate found: "'+duplicate.title+'" at '+duplicate.organization+' already exists (status: '+duplicate.status+'). Review the existing listing before adding another.');if(confirm('A matching job already exists. Would you like to open that existing listing for review instead?'))editJob(duplicate);return;}}catch(error){msg('formMessage','Could not check for duplicates, so the job was not saved: '+error.message);return;}result=await client.from('jobs').insert(record);}if(result.error){msg('formMessage','Could not save: '+result.error.message);return;}msg('formMessage','Job saved to the online database.');clearForm();await loadAdminJobs();});
 async function loadAdminJobs(){
  const box=$('adminJobs'),expiredBox=$('expiredAdminJobs');
  box.innerHTML='<p>Loading listings…</p>';expiredBox.innerHTML='<p>Loading expired listings…</p>';
@@ -157,6 +157,7 @@ function excelDate(value){
  const d=new Date(String(value));return isNaN(d)?null:d.toISOString().slice(0,10);
 }
 function excelCell(row,key){const found=Object.keys(row).find(k=>normalizeExcelHeader(k)===normalizeExcelHeader(key));return found===undefined?'':String(row[found]??'').trim();}
+function excelValue(row,aliases){const wanted=aliases.map(normalizeExcelHeader);const found=Object.keys(row).find(k=>wanted.includes(normalizeExcelHeader(k)));return found===undefined?'':String(row[found]??'').trim();}
 function normalizeCategory(v){
  const s=String(v||'').trim().toLowerCase();
  if(s.includes('government')||s.includes('govt'))return 'Government';
@@ -176,7 +177,7 @@ function normalizeRecruitmentRegion(v,scope=''){
  const s=String(v||'').trim().toLowerCase().replace(/[ -]+/g,'_');
  const aliases={'city':'city_specific','cityspecific':'city_specific','punjab_wide':'punjab','sindh_wide':'sindh','kpk':'khyber_pakhtunkhwa','kpk_wide':'khyber_pakhtunkhwa','khyber_pakhtunkhwa_wide':'khyber_pakhtunkhwa','balochistan_wide':'balochistan','nationwide_pakistan':'nationwide','pakistan_wide':'nationwide'};
  const key=aliases[s]||s;
- if(!s)return scope==='international'?'international':'city_specific';return ['city_specific','punjab','sindh','khyber_pakhtunkhwa','balochistan','nationwide','international','needs_review'].includes(key)?key:'needs_review';
+ if(!s)return scope==='international'?'international':'needs_review';return ['city_specific','punjab','sindh','khyber_pakhtunkhwa','balochistan','nationwide','international','needs_review'].includes(key)?key:'needs_review';
 }
 function makeExcelTemplate(){
  const rows=[['title','organization','category','posted_date','location_scope','city','recruitment_region','application_eligibility','application_instructions','country','remote_eligibility','work_arrangement','visa_work_authorization','area','qualification','experience','employment_type','salary','deadline','source','source_url','apply_url','description'],
@@ -198,21 +199,70 @@ $('jobsExcelFile')?.addEventListener('change',async e=>{
   if(!raw.length)throw new Error('No job rows were found. Put column headings in the first row.');
   const seen=new Set();
   excelImportRows=raw.map((r,i)=>{
-   const rec={};excelHeaders.forEach(k=>rec[k]=excelCell(r,k)||null);
-   rec.category=normalizeCategory(rec.category);rec.location_scope=String(rec.location_scope||'').trim().toLowerCase();rec.city=String(rec.city||'').trim();if(rec.location_scope==='local')rec.location_scope=normalizeCity(rec.city).toLowerCase()||'pakistan';if(['remote_pakistan','remote_worldwide'].includes(rec.location_scope))rec.location_scope='international';rec.recruitment_region=normalizeRecruitmentRegion(rec.recruitment_region,rec.location_scope);if(rec.location_scope==='international')rec.recruitment_region='international';rec.application_eligibility=String(rec.application_eligibility||'').trim()||null;rec.application_instructions=String(rec.application_instructions||'').trim()||null;rec.country=String(rec.country||'').trim()||null;rec.remote_eligibility=String(rec.remote_eligibility||'').trim()||null;rec.work_arrangement=String(rec.work_arrangement||'').trim()||null;rec.visa_work_authorization=String(rec.visa_work_authorization||'').trim()||null;rec.employment_type=String(rec.employment_type||'').trim()||null;rec.posted_at=excelDate(r[Object.keys(r).find(k=>['posteddate','postedat','jobposteddate'].includes(normalizeExcelHeader(k)))]);delete rec.posted_date;rec.qualification=String(rec.qualification||'').trim()||'Not specified';rec.deadline=excelDate(r[Object.keys(r).find(k=>normalizeExcelHeader(k)==='deadline')]);
+   const get=(...keys)=>excelValue(r,keys);
+   const rawCity=get('city','job_city','job_location','location');
+   let scope=get('location_scope','portal_listing_group','job_location_type','location_type').toLowerCase();
+   if(scope==='local')scope=normalizeCity(rawCity).toLowerCase()||'pakistan';
+   if(['remote_pakistan','remote_worldwide'].includes(scope))scope='international';
+   if(!scope){const knownCity=normalizeCity(rawCity);scope=knownCity?knownCity.toLowerCase():((get('country','remote_eligibility')?'international':''));}
+   const rec={
+    title:get('title','job_title','position'),
+    organization:get('organization','employer','company','company_name'),
+    category:normalizeCategory(get('category','job_category','sector')),
+    posted_at:excelDate(get('posted_date','posted_at','job_posted_date')),
+    location_scope:scope,
+    city:rawCity,
+    recruitment_region:normalizeRecruitmentRegion(get('recruitment_region','region','recruitment_area'),scope),
+    application_eligibility:get('application_eligibility','domicile_eligibility','district_eligibility','domicile'),
+    application_instructions:get('application_instructions','how_to_apply','application_process'),
+    country:get('country','job_country'),
+    remote_eligibility:get('remote_eligibility','eligible_countries','remote_location'),
+    work_arrangement:get('work_arrangement','work_mode','work_type'),
+    visa_work_authorization:get('visa_work_authorization','visa_sponsorship','work_authorization'),
+    area:get('area','sector_area','department_area'),
+    qualification:get('qualification','education','qualifications')||'Not specified',
+    experience:get('experience','experience_required'),
+    employment_type:get('employment_type','job_type','contract_type'),
+    salary:get('salary','salary_range','compensation'),
+    deadline:excelDate(get('deadline','last_date','application_deadline','closing_date')),
+    source:get('source','source_name','job_source'),
+    source_url:get('source_url','original_source_url','job_url'),
+    apply_url:get('apply_url','application_url','application_link'),
+    description:get('description','job_description','details'),
+    status:'draft'
+   };
+   rec.city=String(rec.city||'').trim();
+   for(const key of ['application_eligibility','application_instructions','country','remote_eligibility','work_arrangement','visa_work_authorization','area','experience','employment_type','salary','source','source_url','apply_url','description'])rec[key]=String(rec[key]||'').trim()||null;
+   if(rec.location_scope==='international')rec.recruitment_region='international';
+   if(rec.location_scope==='rawalpindi'&&!rec.city)rec.city='Rawalpindi';
+   if(rec.location_scope==='islamabad'&&!rec.city)rec.city='Islamabad';
+   if(rec.location_scope==='international'&&!rec.city)rec.city=rec.remote_eligibility?'Remote':(rec.country||'');
+   const warnings=[];
+   if(rec.qualification==='Not specified')warnings.push('Qualification not stated');
+   if(!rec.recruitment_region||rec.recruitment_region==='needs_review')warnings.push('Recruitment region needs review');
+   if(!rec.posted_at)warnings.push('Posted date not supplied');
+   if(!rec.deadline)warnings.push('Deadline not supplied');
+   if(!rec.source_url)warnings.push('Original source URL missing');
    rec.status='draft';
+
    const errors=[];
    if(!rec.title)errors.push('Missing title');if(!rec.organization)errors.push('Missing organization');
    if(!rec.category)errors.push('Category must be Government, Private, Newspaper, Internship or NGO / Development');
-   if(!['rawalpindi','islamabad','pakistan','international'].includes(rec.location_scope))errors.push('Portal listing group must be Rawalpindi, Islamabad, Pakistan-wide or International');if(!['city_specific','punjab','sindh','khyber_pakhtunkhwa','balochistan','nationwide','international','needs_review'].includes(rec.recruitment_region))errors.push('Select a valid recruitment region');if(rec.location_scope==='rawalpindi'){if(rec.city&&normalizeCity(rec.city)!=='Rawalpindi')errors.push('Rawalpindi location type must have Rawalpindi as the city');rec.city='Rawalpindi';}if(rec.location_scope==='islamabad'){if(rec.city&&normalizeCity(rec.city)!=='Islamabad')errors.push('Islamabad location type must have Islamabad as the city');rec.city='Islamabad';}if(rec.location_scope==='international'&&!rec.city)rec.city=rec.remote_eligibility?'Remote':(rec.country||'');if(rec.location_scope==='international'&&!rec.country&&!rec.remote_eligibility)errors.push('International jobs need a country or remote eligibility');if(rec.recruitment_region==='international'&&rec.location_scope!=='international')errors.push('International recruitment region must use the International listing group');if(!rec.city)errors.push('Missing city/location');
+   if(!['rawalpindi','islamabad','pakistan','international'].includes(rec.location_scope))errors.push('Portal listing group must be Rawalpindi, Islamabad, Pakistan-wide or International');
+   if(!['city_specific','punjab','sindh','khyber_pakhtunkhwa','balochistan','nationwide','international','needs_review'].includes(rec.recruitment_region))errors.push('Select a valid recruitment region');
+   if(rec.location_scope==='rawalpindi'){if(rec.city&&normalizeCity(rec.city)!=='Rawalpindi')errors.push('Rawalpindi location type must have Rawalpindi as the city');rec.city='Rawalpindi';}
+   if(rec.location_scope==='islamabad'){if(rec.city&&normalizeCity(rec.city)!=='Islamabad')errors.push('Islamabad location type must have Islamabad as the city');rec.city='Islamabad';}
+   if(rec.location_scope==='international'&&!rec.country&&!rec.remote_eligibility)errors.push('International jobs need a country or remote eligibility');
+   if(rec.recruitment_region==='international'&&rec.location_scope!=='international')errors.push('International recruitment region must use the International listing group');
+   if(!rec.city)errors.push('Missing city/location');
    if(rec.deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(rec.deadline))errors.push('Invalid deadline');
    const key=rec.source_url||((rec.title||'').toLowerCase()+'|'+(rec.organization||'').toLowerCase());
    if(seen.has(key))errors.push('Duplicate row in this workbook');seen.add(key);
-   return {record:rec,row:i+2,errors};
+   return {record:rec,row:i+2,errors,warnings};
   });
   const good=excelImportRows.filter(x=>!x.errors.length).length;
   msg('excelImportMessage',`Read ${raw.length} rows: ${good} valid, ${raw.length-good} need correction. All imports will be Draft.`);
-  $('excelPreview').innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th>Excel row</th><th>Job title</th><th>Organization</th><th>Location type</th><th>City / country</th><th>Recruitment region</th><th>Check</th></tr></thead><tbody>'+excelImportRows.map(x=>'<tr><td>'+x.row+'</td><td>'+esc(x.record.title||'—')+'</td><td>'+esc(x.record.organization||'—')+'</td><td>'+esc(x.record.location_scope||'—')+'</td><td>'+esc([x.record.city,x.record.country].filter(Boolean).join(', ')||'—')+'</td><td>'+esc(x.record.recruitment_region||'—')+'</td><td style="color:'+(x.errors.length?'#b42318':'#16803c')+'">'+esc(x.errors.join('; ')||'Ready')+'</td></tr>').join('')+'</tbody></table></div>';
+  $('excelPreview').innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr><th>Excel row</th><th>Job title</th><th>Organization</th><th>Location type</th><th>City / country</th><th>Recruitment region</th><th>All mapped fields</th><th>Validation</th></tr></thead><tbody>'+excelImportRows.map(x=>{const details=Object.entries(x.record).filter(([k])=>k!=='status').map(([k,v])=>'<div><strong>'+esc(k.replace(/_/g,' '))+':</strong> '+esc(v||'—')+'</div>').join('');return '<tr><td>'+x.row+'</td><td>'+esc(x.record.title||'—')+'</td><td>'+esc(x.record.organization||'—')+'</td><td>'+esc(x.record.location_scope||'—')+'</td><td>'+esc([x.record.city,x.record.country].filter(Boolean).join(', ')||'—')+'</td><td>'+esc(x.record.recruitment_region||'—')+'</td><td><details><summary>View all fields</summary>'+details+'</details></td><td style="color:'+(x.errors.length?'#b42318':'#16803c')+'">'+esc(x.errors.join('; ')||'Ready')+(x.warnings.length?'<br><small>Review: '+esc(x.warnings.join('; '))+'</small>':'')+'</td></tr>';}).join('')+'</tbody></table></div>';
   $('importExcelJobs').classList.remove('hidden');$('importExcelJobs').disabled=good===0;
  }catch(err){msg('excelImportMessage','Could not read workbook: '+err.message);}
 });
@@ -478,9 +528,9 @@ $('downloadFetchedSelected')?.addEventListener('click',()=>{
 $('reviewFetchedSelected')?.addEventListener('click',async()=>{
  const rows=selectedFetchedJobs();if(!rows.length||!client)return;
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}).format(new Date());
- const ready=rows.filter(j=>{if(j.is_demo||j.recruitment_region==='needs_review'||!j.title||!j.organization||!j.city||!j.deadline||!/^\d{4}-\d{2}-\d{2}$/.test(j.deadline)||j.deadline<today||!j.source_url)return false;const scope=j.location_scope||'local';if(scope==='rawalpindi')return normalizeCity(j.city)==='Rawalpindi';if(scope==='islamabad')return normalizeCity(j.city)==='Islamabad';if(scope==='local')return ['Islamabad','Rawalpindi'].includes(normalizeCity(j.city));if(scope==='pakistan')return ['punjab','nationwide'].includes(j.recruitment_region)&&!!j.city;if(['international','remote_pakistan','remote_worldwide'].includes(scope))return !!(j.country||j.remote_eligibility);return false;});
+ const ready=rows.filter(j=>{if(j.is_demo||!j.title||!j.organization||!j.city||!j.source_url)return false;if(j.deadline&&(!/^\d{4}-\d{2}-\d{2}$/.test(j.deadline)||j.deadline<today))return false;const scope=j.location_scope||'local';if(scope==='rawalpindi')return normalizeCity(j.city)==='Rawalpindi';if(scope==='islamabad')return normalizeCity(j.city)==='Islamabad';if(scope==='local')return ['Islamabad','Rawalpindi'].includes(normalizeCity(j.city));if(scope==='pakistan')return !!j.city;if(['international','remote_pakistan','remote_worldwide'].includes(scope))return !!(j.country||j.remote_eligibility);return false;});
  const skipped=rows.length-ready.length;
- if(!ready.length){msg('fetchedJobsMessage','None selected can be moved to Draft. Demo fixtures are test-only; real vacancies must have a title, employer, valid location classification, country or remote eligibility where required, future deadline and original source URL.');return;}
+ if(!ready.length){msg('fetchedJobsMessage','None selected can be moved to Draft. Demo fixtures are test-only. Real vacancies need a title, employer, valid location, and original source URL; missing dates or eligibility details can remain flagged for review in Draft.');return;}
  if(!confirm('Move '+ready.length+' eligible vacancy/vacancies into Caritas Jobs as Draft? '+skipped+' incomplete or expired item(s) will remain in the collector queue.'))return;
  const existing=await client.from('jobs').select('id,title,organization,source_url');
  if(existing.error){msg('fetchedJobsMessage','Could not check duplicates: '+existing.error.message);return;}
