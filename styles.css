@@ -615,3 +615,8 @@ body.disclaimer-open{overflow:hidden}
 
 /* Public administrator avatar and profile photo controls */
 .nav-admin-profile{display:inline-flex;align-items:center;gap:8px}.admin-profile-controls .hidden{display:none!important}.admin-profile-card .admin-profile-photo-wrap img{object-fit:cover}.admin-profile-card .admin-profile-controls{min-width:240px}.admin-profile-card .admin-profile-controls input{max-width:100%}
+
+
+/* Make the public administrator photo more visible in the main navigation */
+.nav-admin-profile .nav-profile-placeholder,
+.nav-admin-profile .nav-profile-avatar{width:44px;height:44px;min-width:44px;flex:0 0 44px;border-radius:50%;}
