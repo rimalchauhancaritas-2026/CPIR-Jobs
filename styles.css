@@ -624,3 +624,7 @@ body.disclaimer-open{overflow:hidden}
 
 /* Fit the complete selected admin crop inside the circular navigation avatar */
 .nav-admin-profile .nav-profile-avatar{object-fit:contain!important;padding:6px!important;box-sizing:border-box;background:#fff;border-radius:50%;}
+
+
+/* Ensure the candidate photo stays hidden until it loads, so only one placeholder is visible */
+.nav-profile-avatar.hidden{display:none!important;visibility:hidden!important;width:0!important;min-width:0!important;flex:0 0 0!important;padding:0!important;border:0!important;margin:0!important;}
