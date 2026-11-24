@@ -620,3 +620,7 @@ body.disclaimer-open{overflow:hidden}
 /* Make the public administrator photo more visible in the main navigation */
 .nav-admin-profile .nav-profile-placeholder,
 .nav-admin-profile .nav-profile-avatar{width:44px;height:44px;min-width:44px;flex:0 0 44px;border-radius:50%;}
+
+
+/* Fit the complete selected admin crop inside the circular navigation avatar */
+.nav-admin-profile .nav-profile-avatar{object-fit:contain!important;padding:6px!important;box-sizing:border-box;background:#fff;border-radius:50%;}
