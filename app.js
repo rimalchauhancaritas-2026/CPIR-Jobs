@@ -38,14 +38,18 @@ async function updateHomeAuthNav(session){
  if(!link)return;
  link.href=session?.user?'candidate.html#candidateDashboard':'candidate.html#signup';
  if(label)label.textContent=session?.user?'Profile':'Sign Up / Login';
- if(img){img.removeAttribute('src');img.classList.add('hidden');}
+ if(img){
+  img.onerror=()=>{img.removeAttribute('src');img.classList.add('hidden');placeholder?.classList.remove('hidden');};
+  img.onload=()=>{img.classList.remove('hidden');placeholder?.classList.add('hidden');};
+  img.removeAttribute('src');img.classList.add('hidden');
+ }
  placeholder?.classList.remove('hidden');
  if(!session?.user)return;
  const c=getClient();if(!c)return;
  const path=session.user.user_metadata?.account_photo_path;
  if(!path)return;
- const {data:signed}=await c.storage.from('candidate-photos').createSignedUrl(path,3600);
- if(signed?.signedUrl&&img){img.src=signed.signedUrl;img.classList.remove('hidden');placeholder?.classList.add('hidden');}
+ const {data:signed,error}=await c.storage.from('candidate-photos').createSignedUrl(path,3600);
+ if(!error&&signed?.signedUrl&&img){img.src=signed.signedUrl;}
 }
 function initHomeAuthNav(){
  const c=getClient();if(!c)return;
