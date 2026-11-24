@@ -178,6 +178,9 @@ async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
       : Array.isArray(payload?.results) ? payload.results
       : Array.isArray(payload?.data) ? payload.data
       : Array.isArray(payload?.data?.jobs) ? payload.data.jobs
+      : Array.isArray(payload?.items) ? payload.items
+      : Array.isArray(payload?.data?.items) ? payload.data.items
+      : Array.isArray(payload?.data?.results) ? payload.data.results
       : [];
     for (const item of jobs as Record<string, unknown>[]) {
       const slug = cleanText(firstValue(item.slug, item.id, item.external_id));
@@ -187,12 +190,12 @@ async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
       const cities = listText(firstValue(item.cities, item.city, item.locations, item.location));
       const city = cities.length > 1 ? "Multiple locations" : (cities[0] || "Location to be confirmed");
       const province = firstValue(item.province, item.province_name, item.province_slug);
-      const listedCountry = cleanText(firstValue(item.country, item.country_name, item.country_code));
-      const isInternational = item.international === true || item.is_international === true ||
+      const listedCountry = listText(firstValue(item.country, item.country_name, item.country_code)).join(", ");
+      const isInternational = item.international === true || item.is_international === true || /^(true|1|yes)$/i.test(cleanText(item.international)) ||
         (!!listedCountry && !/^(pakistan|pk)$/i.test(listedCountry));
       const recruitmentRegion = isInternational ? "international" : classifyPakistanRegion(item, cities);
-      const localCity = cities.length === 1 && /rawalpindi/i.test(cities[0]) ? "rawalpindi"
-        : cities.length === 1 && /islamabad/i.test(cities[0]) ? "islamabad" : "";
+      const localCity = cities.length === 1 && /^rawalpindi$/i.test(cities[0].trim()) ? "rawalpindi"
+        : cities.length === 1 && /^islamabad$/i.test(cities[0].trim()) ? "islamabad" : "";
       const locationScope = isInternational ? "international" : (localCity || "pakistan");
       const deadline = dateOnly(firstValue(item.deadline, item.last_date, item.application_deadline, item.closing_date));
       const published = dateOnly(firstValue(item.published_at, item.publication_date, item.posted_at, item.posted_date));
