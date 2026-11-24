@@ -205,11 +205,13 @@ $('jobsExcelFile')?.addEventListener('change',async e=>{
    if(scope==='local')scope=normalizeCity(rawCity).toLowerCase()||'pakistan';
    if(['remote_pakistan','remote_worldwide'].includes(scope))scope='international';
    if(!scope){const knownCity=normalizeCity(rawCity),countryValue=get('country','job_country'),remoteValue=get('remote_eligibility','eligible_countries','remote_location');scope=knownCity?knownCity.toLowerCase():(remoteValue?'international':(countryValue?/^(pakistan|pk)$/i.test(countryValue)?'pakistan':'international':''));}
+   const postedRaw=get('posted_date','posted_at','job_posted_date');
+   const deadlineRaw=get('deadline','last_date','application_deadline','closing_date');
    const rec={
     title:get('title','job_title','position'),
     organization:get('organization','employer','company','company_name'),
     category:normalizeCategory(get('category','job_category','sector')),
-    posted_at:excelDate(get('posted_date','posted_at','job_posted_date')),
+    posted_at:excelDate(postedRaw),
     location_scope:scope,
     city:rawCity,
     recruitment_region:normalizeRecruitmentRegion(get('recruitment_region','region','recruitment_area'),scope),
@@ -224,7 +226,7 @@ $('jobsExcelFile')?.addEventListener('change',async e=>{
     experience:get('experience','experience_required'),
     employment_type:get('employment_type','job_type','contract_type'),
     salary:get('salary','salary_range','compensation'),
-    deadline:excelDate(get('deadline','last_date','application_deadline','closing_date')),
+    deadline:excelDate(deadlineRaw),
     source:get('source','source_name','job_source'),
     source_url:get('source_url','original_source_url','job_url'),
     apply_url:get('apply_url','application_url','application_link'),
@@ -255,7 +257,8 @@ $('jobsExcelFile')?.addEventListener('change',async e=>{
    if(rec.location_scope==='international'&&!rec.country&&!rec.remote_eligibility)errors.push('International jobs need a country or remote eligibility');
    if(rec.recruitment_region==='international'&&rec.location_scope!=='international')errors.push('International recruitment region must use the International listing group');
    if(!rec.city)errors.push('Missing city/location');
-   if(rec.deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(rec.deadline))errors.push('Invalid deadline');
+   if(postedRaw&&!rec.posted_at)errors.push('Invalid posted date');
+   if(deadlineRaw&&!rec.deadline)errors.push('Invalid deadline');
    const key=rec.source_url||((rec.title||'').toLowerCase()+'|'+(rec.organization||'').toLowerCase());
    if(seen.has(key))errors.push('Duplicate row in this workbook');seen.add(key);
    return {record:rec,row:i+2,errors,warnings};
