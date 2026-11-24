@@ -120,7 +120,7 @@ async function fetchJobicy(source: SourceRow): Promise<FetchedRecord[]> {
       external_id: id,
       title: cleanText(job.jobTitle),
       organization: cleanText(job.companyName),
-      category: industries[0] || "Remote",
+      category: "Private",
       location_scope: "international",
       city: "Remote",
       country: null,
@@ -170,7 +170,7 @@ async function fetchRemoteOk(source: SourceRow): Promise<FetchedRecord[]> {
     const link = xmlTag(item, "link");
     const guid = xmlTag(item, "guid");
     const title = xmlTag(item, "title");
-    const company = xmlTag(item, "company") || "Employer details in original listing";
+    const company = xmlTag(item, "company");
     const location = xmlTag(item, "location");
     const description = xmlTag(item, "description") || xmlTag(item, "encoded");
     const posted = xmlTag(item, "pubDate");
@@ -183,7 +183,7 @@ async function fetchRemoteOk(source: SourceRow): Promise<FetchedRecord[]> {
       external_id: externalId,
       title: stripHtml(title),
       organization: stripHtml(company),
-      category: tags[0] || "Remote",
+      category: "Private",
       location_scope: "international",
       city: "Remote",
       country: null,
