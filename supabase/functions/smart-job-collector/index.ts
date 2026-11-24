@@ -99,7 +99,134 @@ function safeFeedUrl(source: SourceRow): URL {
       (url.hostname !== "remoteok.com" || url.pathname !== "/remote-jobs.rss")) {
     throw new Error("Remote OK source URL is outside the approved RSS endpoint.");
   }
+  if (source.source_key === "skillzdunya" &&
+      (url.hostname !== "skillzdunya.com" || url.pathname !== "/api/v1/jobs")) {
+    throw new Error("SkillzDunya source URL is outside the approved API endpoint.");
+  }
   return url;
+}
+
+function firstValue(...values: unknown[]): unknown {
+  return values.find((value) => value !== undefined && value !== null && cleanText(value) !== "");
+}
+
+function listText(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => {
+    if (item && typeof item === "object") {
+      const row = item as Record<string, unknown>;
+      return cleanText(firstValue(row.name, row.title, row.label, row.city, row.slug));
+    }
+    return cleanText(item);
+  }).filter(Boolean);
+  return cleanText(value) ? [cleanText(value)] : [];
+}
+
+function provinceRegion(value: unknown): string | null {
+  const text = cleanText(value).toLowerCase().replace(/[_-]+/g, " ");
+  if (/\bkpk\b|khyber\s*pakhtunkhwa|north west frontier/.test(text)) return "khyber_pakhtunkhwa";
+  if (/\bbalochistan\b/.test(text)) return "balochistan";
+  if (/\bsindh\b/.test(text)) return "sindh";
+  if (/\bpunjab\b/.test(text)) return "punjab";
+  return null;
+}
+
+function classifyPakistanRegion(job: Record<string, unknown>, cityNames: string[]): string {
+  const province = firstValue(job.province, job.province_name, job.province_slug, job.provinceName);
+  const eligibility = cleanText(firstValue(job.eligibility, job.domicile, job.quota, job.application_eligibility));
+  const allText = [
+    cleanText(province), eligibility, cleanText(job.title), cleanText(job.description),
+    cleanText(job.region), cleanText(job.location), cityNames.join(" "),
+  ].join(" ").toLowerCase();
+  const provinceValue = provinceRegion(province) || provinceRegion(allText);
+  if (provinceValue) return provinceValue;
+  if (/all pakistan|nationwide|across pakistan|anywhere in pakistan|all over pakistan/.test(allText)) return "nationwide";
+  if (cityNames.some((city) => /rawalpindi|islamabad/i.test(city))) return "city_specific";
+  return "needs_review";
+}
+
+async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
+  const base = safeFeedUrl(source);
+  const filters = [
+    { city: "rawalpindi" },
+    { city: "islamabad" },
+    { province: "punjab" },
+    {},
+  ];
+  const payloads = await Promise.all(filters.map(async (filter) => {
+    const url = new URL(base.toString());
+    url.searchParams.set("per_page", "100");
+    url.searchParams.set("status", "open");
+    url.searchParams.set("sort", "newest");
+    Object.entries(filter).forEach(([key, value]) => url.searchParams.set(key, value));
+    const response = await fetch(url, {
+      headers: { "Accept": "application/json", "User-Agent": "CPIR-Jobs-Collector/1.0 (+https://rimalchauhancaritas-2026.github.io/CPIR-Jobs/)" },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) throw new Error("SkillzDunya API returned HTTP " + response.status);
+    return await response.json();
+  }));
+
+  const records = new Map<string, FetchedRecord>();
+  for (const payload of payloads) {
+    const jobs = Array.isArray(payload) ? payload
+      : Array.isArray(payload?.jobs) ? payload.jobs
+      : Array.isArray(payload?.results) ? payload.results
+      : Array.isArray(payload?.data) ? payload.data
+      : Array.isArray(payload?.data?.jobs) ? payload.data.jobs
+      : [];
+    for (const item of jobs as Record<string, unknown>[]) {
+      const slug = cleanText(firstValue(item.slug, item.id, item.external_id));
+      const canonical = cleanText(firstValue(item.url, item.canonical_url, item.permalink));
+      const title = cleanText(firstValue(item.title, item.job_title, item.position));
+      const organization = cleanText(firstValue(item.organization, item.organization_name, item.company, item.employer, item.department));
+      const cities = listText(firstValue(item.cities, item.city, item.locations, item.location));
+      const city = cities.length > 1 ? "Multiple locations" : (cities[0] || "Location to be confirmed");
+      const province = firstValue(item.province, item.province_name, item.province_slug);
+      const recruitmentRegion = classifyPakistanRegion(item, cities);
+      const localCity = cities.find((name) => /rawalpindi/i.test(name)) ? "rawalpindi"
+        : cities.find((name) => /islamabad/i.test(name)) ? "islamabad" : "";
+      const locationScope = localCity || (recruitmentRegion === "city_specific" ? "pakistan" : "pakistan");
+      const deadline = dateOnly(firstValue(item.deadline, item.last_date, item.application_deadline, item.closing_date));
+      const published = dateOnly(firstValue(item.published_at, item.publication_date, item.posted_at, item.posted_date));
+      const officialApply = cleanText(firstValue(item.official_source_url, item.application_url, item.apply_url, item.apply_link));
+      const eligibility = cleanText(firstValue(item.eligibility, item.domicile, item.quota, item.application_eligibility)) || null;
+      const instructions = cleanText(firstValue(item.how_to_apply, item.application_instructions, item.how_to_apply_text)) || null;
+      const description = stripHtml(firstValue(item.description, item.body, item.summary, item.excerpt));
+      if (!slug || !canonical || !title || !organization) continue;
+      records.set(slug, {
+        source_name: source.display_name,
+        external_id: slug,
+        title,
+        organization,
+        category: item.government === true || item.government === 1 || cleanText(item.type).toLowerCase().includes("government") ? "Government" : "Private",
+        location_scope: locationScope,
+        recruitment_region: recruitmentRegion,
+        application_eligibility: eligibility,
+        application_instructions: instructions,
+        city,
+        country: "Pakistan",
+        remote_eligibility: null,
+        work_arrangement: "On-site",
+        qualification: cleanText(firstValue(item.education, item.qualification, item.qualifications)) || null,
+        experience: cleanText(firstValue(item.experience, item.experience_required)) || null,
+        employment_type: cleanText(firstValue(item.employment_type, item.job_type)) || null,
+        salary: cleanText(firstValue(item.salary, item.salary_range)) || null,
+        posted_date: published,
+        deadline,
+        source_url: canonical,
+        apply_url: officialApply || canonical,
+        description: description || null,
+        is_demo: false,
+        review_status: "needs_review",
+        review_notes: "Fetched from SkillzDunya's public Pakistan Jobs API. Check the original SkillzDunya listing and its linked official advertisement. Recruitment region is inferred from the available province, city and eligibility text; confirm it before importing.",
+        raw_data: { provider: "SkillzDunya", provider_job: item, attribution_required: true, official_source_url: officialApply || null, inferred_recruitment_region: recruitmentRegion, province: province || null },
+      });
+    }
+  }
+  return [...records.values()].filter((job) =>
+    job.external_id && job.title && job.organization &&
+    /^https:\/\/skillzdunya\.com\//i.test(job.source_url)
+  );
 }
 
 async function fetchJobicy(source: SourceRow): Promise<FetchedRecord[]> {
@@ -232,7 +359,7 @@ Deno.serve(async (req) => {
     .eq("enabled", true)
     .eq("schedule_enabled", true)
     .eq("access_status", "approved")
-    .in("source_key", ["jobicy", "remoteok"]);
+    .in("source_key", ["jobicy", "remoteok", "skillzdunya"]);
 
   if (sourceError) return json({ error: "Could not load approved collector sources: " + sourceError.message }, 500);
   if (!sources?.length) return json({ ok: true, message: "No approved live sources are enabled for the schedule.", sources_processed: 0 });
@@ -252,6 +379,7 @@ Deno.serve(async (req) => {
       let records: FetchedRecord[];
       if (source.source_key === "jobicy" && source.access_method === "api") records = await fetchJobicy(source);
       else if (source.source_key === "remoteok" && source.access_method === "rss") records = await fetchRemoteOk(source);
+      else if (source.source_key === "skillzdunya" && source.access_method === "api") records = await fetchSkillzDunya(source);
       else throw new Error("The selected source has an unsupported connection method.");
 
       const seen = records.length;
