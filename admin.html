@@ -17,7 +17,7 @@
 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="jobs">All Jobs</button>
 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="users">Registered Users</button>
 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="contact">Contact Us</button>
-<button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="collector">Smart Job Collector</button>
+<button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="collector">Smart Job Collector</button><button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="subadmins" id="subAdminsTab" hidden>Sub-Admins</button>
 </nav><div class="admin-tab-panel active" data-admin-panel="home"><section class="info-card admin-profile-card" id="adminProfileCard"><div class="admin-profile-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h2>Administrator Profile</h2><p>Your personal photo is private to your login. The saved public Admin Login photo is displayed on the homepage.</p></div><div class="admin-profile-photo-wrap"><img id="adminPhotoPreview" class="hidden" alt="Administrator profile photograph"><span id="adminPhotoPlaceholder" aria-hidden="true">👤</span></div></div><div class="admin-profile-controls"><div id="adminPhotoUploadControls"><label for="adminPhotoInput">Choose profile photograph<input id="adminPhotoInput" type="file" accept="image/jpeg,image/png,image/webp"></label><small>No fixed file-size limit. You can freely adjust the crop and face position.</small><div class="admin-actions"><button type="button" class="primary-btn hidden" id="saveAdminPhotoBtn">Save photograph</button></div></div><div class="admin-actions"><button type="button" class="secondary-btn hidden" id="editAdminPhotoBtn">Change photograph</button><button type="button" class="secondary-btn hidden" id="removeAdminPhotoBtn">Remove photograph</button></div><p id="adminPhotoMessage" role="status"></p></div></section><section class="info-card" id="excelImportPanel" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
 <h2>Import jobs from Excel</h2>
 <p>Upload an Excel workbook with a sheet named <strong>Jobs</strong>. Use one row per vacancy. Imported listings are saved as <strong>Draft</strong> so you can verify them before publishing.</p>
@@ -36,5 +36,22 @@
  <p id="fetchedJobsMessage" role="status"></p>
  <div id="fetchedJobsList"><p>Fetched vacancies will appear here after an approved source connector is activated.</p></div>
  <p class="source-footnote">The review queue is separate from public jobs. Missing posting dates or deadlines must be checked against the original advertisement before approval. Daily collection requires a server-side schedule; this page alone cannot run while the browser is closed.</p>
+</section></div><div class="admin-tab-panel" data-admin-panel="subadmins" id="subAdminsPanel">
+<section class="info-card" style="margin:1rem auto 2rem;max-width:900px;padding:1.5rem">
+<div class="section-heading"><div><p class="eyebrow">MAIN ADMIN ONLY</p><h2>Sub-Admin Management</h2><p>Create staff administrator accounts and assign their responsibilities.</p></div></div>
+<div class="source-notice"><strong>Security rollout:</strong> Accounts created in this stage are saved as inactive. They cannot sign in to the Admin Portal until Stage 3 installs permission checks across the dashboard and database. Do not share temporary passwords until Stage 3 is complete.</div>
+<form id="subAdminCreateForm" class="admin-form">
+<div class="form-grid">
+<label>Full name<input id="subAdminName" maxlength="120" required></label>
+<label>Email address<input id="subAdminEmail" type="email" maxlength="254" required></label>
+<label>Temporary password<input id="subAdminTempPassword" type="password" minlength="12" autocomplete="new-password" required><small>At least 12 characters. Share securely; the sub-admin must change it at first login after Stage 3.</small></label>
+<label>Role<select id="subAdminRole" required></select></label>
+</div>
+<div class="admin-actions"><button type="submit" class="primary-btn" id="createSubAdminBtn">Create Sub-Admin</button><button type="button" class="secondary-btn" id="refreshSubAdminsBtn">Refresh list</button></div>
+<p id="subAdminMessage" role="status"></p>
+</form>
+<hr>
+<h3>Administrator accounts</h3>
+<div id="subAdminsList"><p>Loading administrator accounts…</p></div>
 </section></div></section></div></main><div id="adminCropModal" class="crop-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminCropTitle"><div class="crop-dialog"><h2 id="adminCropTitle">Position administrator photograph</h2><p>Drag the image and adjust the crop freely to place the face exactly where you want it.</p><div class="crop-image-wrap"><img id="adminCropImage" alt="Administrator photograph to crop"></div><div class="crop-controls"><button type="button" class="secondary-btn" id="adminZoomOut">− Zoom out</button><button type="button" class="secondary-btn" id="adminZoomIn">+ Zoom in</button><button type="button" class="secondary-btn" id="adminCancelCrop">Cancel</button><button type="button" class="primary-btn" id="adminApplyCrop">Use this photo</button></div></div></div><footer><div class="copyright">© 2026 Caritas Youth Jobs Portal — Version 1.2</div></footer><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js'"></script><script src="admin.js?v=20261124-photo-fix"></script><script src="branding.js" defer></script>
 </body></html>
