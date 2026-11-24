@@ -204,7 +204,7 @@ $('jobsExcelFile')?.addEventListener('change',async e=>{
    let scope=get('location_scope','portal_listing_group','job_location_type','location_type').toLowerCase();
    if(scope==='local')scope=normalizeCity(rawCity).toLowerCase()||'pakistan';
    if(['remote_pakistan','remote_worldwide'].includes(scope))scope='international';
-   if(!scope){const knownCity=normalizeCity(rawCity);scope=knownCity?knownCity.toLowerCase():((get('country','remote_eligibility')?'international':''));}
+   if(!scope){const knownCity=normalizeCity(rawCity),countryValue=get('country','job_country'),remoteValue=get('remote_eligibility','eligible_countries','remote_location');scope=knownCity?knownCity.toLowerCase():(remoteValue?'international':(countryValue?/^(pakistan|pk)$/i.test(countryValue)?'pakistan':'international':''));}
    const rec={
     title:get('title','job_title','position'),
     organization:get('organization','employer','company','company_name'),
