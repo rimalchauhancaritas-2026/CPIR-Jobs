@@ -48,40 +48,53 @@ function bindAdminActivityTracking(){
 function startAdminIdleTimer(){
  adminSessionActive=true;adminLastActivity=Date.now();checkAdminIdleTimeout();
 }
+let adminPhotoCropper=null,adminPhotoBlob=null,adminPhotoObjectUrl=null;
+function showAdminPhotoEditor(hasPhoto){
+ $('adminPhotoUploadControls').classList.toggle('hidden',!!hasPhoto);
+ $('editAdminPhotoBtn').classList.toggle('hidden',!hasPhoto);
+ $('removeAdminPhotoBtn').classList.toggle('hidden',!hasPhoto);
+ $('removeAdminPhotoBtn').disabled=!hasPhoto;
+}
+function closeAdminPhotoCrop(){ $('adminCropModal').classList.add('hidden');if(adminPhotoCropper){adminPhotoCropper.destroy();adminPhotoCropper=null;}if(adminPhotoObjectUrl){URL.revokeObjectURL(adminPhotoObjectUrl);adminPhotoObjectUrl=null;} }
 function initAdminPhotoControls(){
- $('adminPhotoInput').addEventListener('change',()=>{const file=$('adminPhotoInput').files?.[0];if(!file)return;if(!['image/jpeg','image/png'].includes(file.type)){msg('adminPhotoMessage','Please choose a JPG or PNG image.');$('adminPhotoInput').value='';return;}if(file.size>3*1024*1024){msg('adminPhotoMessage','The photograph must be smaller than 3 MB.');$('adminPhotoInput').value='';return;}const reader=new FileReader();reader.onload=()=>{const image=$('adminPhotoPreview');image.src=reader.result;image.classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');};reader.readAsDataURL(file);msg('adminPhotoMessage','Ready to save.');});
- $('saveAdminPhotoBtn').addEventListener('click',saveAdminPhoto);
- $('removeAdminPhotoBtn').addEventListener('click',removeAdminPhoto);
+ $('adminPhotoInput').addEventListener('change',()=>{const file=$('adminPhotoInput').files?.[0];if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)){msg('adminPhotoMessage','Please choose a JPG, PNG or WebP image.');$('adminPhotoInput').value='';return;}if(!window.Cropper){msg('adminPhotoMessage','The photo editor could not load. Please refresh and try again.');return;}adminPhotoObjectUrl=URL.createObjectURL(file);$('adminCropImage').src=adminPhotoObjectUrl;$('adminCropModal').classList.remove('hidden');if(adminPhotoCropper)adminPhotoCropper.destroy();adminPhotoCropper=new Cropper($('adminCropImage'),{aspectRatio:NaN,viewMode:1,dragMode:'move',autoCropArea:.9,responsive:true,background:false,zoomOnWheel:true,movable:true,rotatable:false,scalable:false});msg('adminPhotoMessage','Adjust the crop to position your face, then choose Use this photo.');});
+ $('adminApplyCrop').addEventListener('click',()=>{if(!adminPhotoCropper)return;const canvas=adminPhotoCropper.getCroppedCanvas({maxWidth:2400,maxHeight:2400,imageSmoothingEnabled:true,imageSmoothingQuality:'high'});if(!canvas){msg('adminPhotoMessage','Could not crop this photograph. Please try again.');return;}canvas.toBlob(blob=>{if(!blob){msg('adminPhotoMessage','Could not prepare this photograph.');return;}adminPhotoBlob=blob;$('adminPhotoPreview').src=URL.createObjectURL(blob);$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');closeAdminPhotoCrop();msg('adminPhotoMessage','Photo crop ready. Save to apply it.');},'image/jpeg',.92);});
+ $('adminCancelCrop').addEventListener('click',()=>{closeAdminPhotoCrop();$('adminPhotoInput').value='';});
+ $('adminZoomIn').addEventListener('click',()=>adminPhotoCropper?.zoom(.1));$('adminZoomOut').addEventListener('click',()=>adminPhotoCropper?.zoom(-.1));
+ $('saveAdminPhotoBtn').addEventListener('click',saveAdminPhoto);$('editAdminPhotoBtn').addEventListener('click',()=>{showAdminPhotoEditor(false);msg('adminPhotoMessage','Choose a replacement photograph.');});$('removeAdminPhotoBtn').addEventListener('click',removeAdminPhoto);
 }
 async function loadAdminPhoto(user){
- const path=user?.user_metadata?.admin_photo_path||null;
- $('adminPhotoInput').value='';
- if(!path){$('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');$('removeAdminPhotoBtn').disabled=true;return;}
+ const path=user?.user_metadata?.admin_photo_path||null;$('adminPhotoInput').value='';adminPhotoBlob=null;
+ if(!path){$('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');showAdminPhotoEditor(false);return;}
  const {data,error}=await client.storage.from('candidate-photos').createSignedUrl(path,3600);
- if(error){msg('adminPhotoMessage','Saved photo could not be loaded. You can upload it again.');return;}
- $('adminPhotoPreview').src=data.signedUrl;$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');$('removeAdminPhotoBtn').disabled=false;
+ if(error){msg('adminPhotoMessage','Saved private photo could not be loaded. You can upload it again.');showAdminPhotoEditor(false);return;}
+ $('adminPhotoPreview').src=data.signedUrl;$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');showAdminPhotoEditor(true);
 }
 async function saveAdminPhoto(){
- const {data:{user}}=await client.auth.getUser(),file=$('adminPhotoInput').files?.[0];
- if(!user||!file){msg('adminPhotoMessage','Choose a photograph first.');return;}
- const path=user.id+'/admin-profile.jpg',blob=file;
- msg('adminPhotoMessage','Uploading photograph…');$('saveAdminPhotoBtn').disabled=true;
- const {error:uploadError}=await client.storage.from('candidate-photos').upload(path,blob,{contentType:file.type,upsert:true});
- if(uploadError){msg('adminPhotoMessage','Could not upload photograph: '+uploadError.message);$('saveAdminPhotoBtn').disabled=false;return;}
- const {data,error}=await client.auth.updateUser({data:{admin_photo_path:path}});
- $('saveAdminPhotoBtn').disabled=false;
- if(error){msg('adminPhotoMessage','Photo uploaded but profile could not be updated: '+error.message);return;}
- $('adminPhotoPreview').src=URL.createObjectURL(file);$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');$('removeAdminPhotoBtn').disabled=false;$('adminPhotoInput').value='';msg('adminPhotoMessage','Your administrator profile photograph has been saved.');
+ const {data:{user}}=await client.auth.getUser();if(!user||!adminPhotoBlob){msg('adminPhotoMessage','Choose and crop a photograph first.');return;}
+ const privatePath=user.id+'/admin-profile.jpg',publicPath='admin-profile.jpg';
+ msg('adminPhotoMessage','Saving administrator photograph…');$('saveAdminPhotoBtn').disabled=true;
+ const privateUpload=await client.storage.from('candidate-photos').upload(privatePath,adminPhotoBlob,{contentType:'image/jpeg',upsert:true});
+ if(privateUpload.error){msg('adminPhotoMessage','Could not save your private photograph: '+privateUpload.error.message);$('saveAdminPhotoBtn').disabled=false;return;}
+ const publicUpload=await client.storage.from('portal-profile-photos').upload(publicPath,adminPhotoBlob,{contentType:'image/jpeg',upsert:true,cacheControl:'60'});
+ if(publicUpload.error){msg('adminPhotoMessage','Private photo saved, but public homepage photo could not be updated: '+publicUpload.error.message);$('saveAdminPhotoBtn').disabled=false;return;}
+ const publicUrl=client.storage.from('portal-profile-photos').getPublicUrl(publicPath).data.publicUrl;
+ const meta=await client.auth.updateUser({data:{admin_photo_path:privatePath}});
+ if(meta.error){msg('adminPhotoMessage','Photo uploaded, but your administrator profile could not be updated: '+meta.error.message);$('saveAdminPhotoBtn').disabled=false;return;}
+ const row=await client.from('portal_admin_public_profile').upsert({id:true,photo_url:publicUrl,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'id'});
+ $('saveAdminPhotoBtn').disabled=false;if(row.error){msg('adminPhotoMessage','Your private photo is saved, but the homepage photo record failed: '+row.error.message);return;}
+ $('adminPhotoPreview').src=URL.createObjectURL(adminPhotoBlob);$('adminPhotoPreview').classList.remove('hidden');$('adminPhotoPlaceholder').classList.add('hidden');$('adminPhotoInput').value='';adminPhotoBlob=null;showAdminPhotoEditor(true);msg('adminPhotoMessage','Your administrator photograph is saved. The homepage Admin Login photo is updated.');
 }
 async function removeAdminPhoto(){
- const {data:{user}}=await client.auth.getUser();if(!user)return;
- const path=user.user_metadata?.admin_photo_path;if(!path)return;
- $('removeAdminPhotoBtn').disabled=true;msg('adminPhotoMessage','Removing photograph…');
- const {error:removeError}=await client.storage.from('candidate-photos').remove([path]);
- if(removeError){$('removeAdminPhotoBtn').disabled=false;msg('adminPhotoMessage','Could not remove photograph: '+removeError.message);return;}
- const {error}=await client.auth.updateUser({data:{admin_photo_path:null}});
- if(error){msg('adminPhotoMessage','Photo removed from storage, but profile metadata could not be updated: '+error.message);return;}
- $('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');msg('adminPhotoMessage','Administrator photograph removed.');
+ const {data:{user}}=await client.auth.getUser();if(!user)return;const path=user.user_metadata?.admin_photo_path;if(!path)return;
+ $('removeAdminPhotoBtn').disabled=true;msg('adminPhotoMessage','Removing administrator photograph…');
+ const removePrivate=await client.storage.from('candidate-photos').remove([path]);
+ if(removePrivate.error){$('removeAdminPhotoBtn').disabled=false;msg('adminPhotoMessage','Could not remove your private photograph: '+removePrivate.error.message);return;}
+ const meta=await client.auth.updateUser({data:{admin_photo_path:null}});
+ if(meta.error){msg('adminPhotoMessage','Photo removed from storage, but profile metadata could not be updated: '+meta.error.message);return;}
+ const {data:publicRow}=await client.from('portal_admin_public_profile').select('updated_by').eq('id',true).maybeSingle();
+ if(publicRow?.updated_by===user.id){await client.storage.from('portal-profile-photos').remove(['admin-profile.jpg']);await client.from('portal_admin_public_profile').delete().eq('id',true);}
+ $('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');showAdminPhotoEditor(false);msg('adminPhotoMessage','Administrator photograph removed.');
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();initAdminPhotoControls();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
 async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');await loadAdminPhoto(session.user);startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadCollectorSources();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
