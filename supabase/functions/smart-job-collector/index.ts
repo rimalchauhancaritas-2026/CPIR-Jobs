@@ -187,10 +187,13 @@ async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
       const cities = listText(firstValue(item.cities, item.city, item.locations, item.location));
       const city = cities.length > 1 ? "Multiple locations" : (cities[0] || "Location to be confirmed");
       const province = firstValue(item.province, item.province_name, item.province_slug);
-      const recruitmentRegion = classifyPakistanRegion(item, cities);
+      const listedCountry = cleanText(firstValue(item.country, item.country_name, item.country_code));
+      const isInternational = item.international === true || item.is_international === true ||
+        (!!listedCountry && !/^(pakistan|pk)$/i.test(listedCountry));
+      const recruitmentRegion = isInternational ? "international" : classifyPakistanRegion(item, cities);
       const localCity = cities.length === 1 && /rawalpindi/i.test(cities[0]) ? "rawalpindi"
         : cities.length === 1 && /islamabad/i.test(cities[0]) ? "islamabad" : "";
-      const locationScope = localCity || "pakistan";
+      const locationScope = isInternational ? "international" : (localCity || "pakistan");
       const deadline = dateOnly(firstValue(item.deadline, item.last_date, item.application_deadline, item.closing_date));
       const published = dateOnly(firstValue(item.published_at, item.publication_date, item.posted_at, item.posted_date));
       const officialApply = cleanText(firstValue(item.official_source_url, item.application_url, item.apply_url, item.apply_link));
@@ -203,13 +206,13 @@ async function fetchSkillzDunya(source: SourceRow): Promise<FetchedRecord[]> {
         external_id: slug,
         title,
         organization,
-        category: item.government === true || item.government === 1 || cleanText(item.type).toLowerCase().includes("government") ? "Government" : "Private",
+        category: item.government === true || item.government === 1 || /^(true|1|yes)$/i.test(cleanText(item.government)) || cleanText(item.type).toLowerCase().includes("government") ? "Government" : "Private",
         location_scope: locationScope,
         recruitment_region: recruitmentRegion,
         application_eligibility: eligibility,
         application_instructions: instructions,
         city,
-        country: "Pakistan",
+        country: listedCountry || (isInternational ? null : "Pakistan"),
         remote_eligibility: null,
         work_arrangement: "On-site",
         qualification: cleanText(firstValue(item.education, item.qualification, item.qualifications)) || null,
