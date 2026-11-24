@@ -42,9 +42,9 @@ async function updateHomeAuthNav(session){
  placeholder?.classList.remove('hidden');
  if(!session?.user)return;
  const c=getClient();if(!c)return;
- const {data}=await c.from('cv_profiles').select('photo_path').eq('user_id',session.user.id).maybeSingle();
- if(!data?.photo_path)return;
- const {data:signed}=await c.storage.from('candidate-photos').createSignedUrl(data.photo_path,3600);
+ const path=session.user.user_metadata?.account_photo_path;
+ if(!path)return;
+ const {data:signed}=await c.storage.from('candidate-photos').createSignedUrl(path,3600);
  if(signed?.signedUrl&&img){img.src=signed.signedUrl;img.classList.remove('hidden');placeholder?.classList.add('hidden');}
 }
 function initHomeAuthNav(){
