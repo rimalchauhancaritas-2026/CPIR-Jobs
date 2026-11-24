@@ -72,6 +72,10 @@
   <section class="section jobs-section" id="jobs">
     <div class="container">
       <div class="section-heading"><div><h2>Latest Jobs</h2></div><button class="text-btn" onclick="resetFilters()">View All Jobs&nbsp; →</button></div>
+      <div class="job-location-tabs" role="tablist" aria-label="Job location">
+        <button type="button" class="job-location-tab active" id="localJobsTab" role="tab" aria-selected="true" onclick="setJobLocationTab('local')">Rawalpindi-Islamabad Jobs</button>
+        <button type="button" class="job-location-tab" id="internationalJobsTab" role="tab" aria-selected="false" onclick="setJobLocationTab('international')">International Jobs</button>
+      </div>
       <div id="resultCount" class="result-count"></div>
       <div id="jobsGrid" class="jobs-grid"></div>
       <div id="emptyState" class="empty hidden"><div class="empty-icon">⌕</div><h3>No matching jobs found</h3><p>Try changing your search or filters to see more opportunities.</p><button class="primary-btn" onclick="resetFilters()">Show all jobs</button></div>
