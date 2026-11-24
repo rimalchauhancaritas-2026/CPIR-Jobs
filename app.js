@@ -114,3 +114,12 @@ function initFirstVisitDisclaimer(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initFirstVisitDisclaimer);
 else initFirstVisitDisclaimer();
+
+
+// Show the designated public administrator photograph beside Admin Login.
+async function loadPublicAdminNavPhoto(){
+ const img=document.getElementById('adminNavAvatar'),placeholder=document.getElementById('adminNavPlaceholder');if(!img||!placeholder)return;
+ const c=getClient();if(!c)return;const {data,error}=await c.from('portal_admin_public_profile').select('photo_url').eq('id',true).maybeSingle();
+ if(error||!data?.photo_url)return;img.src=data.photo_url;img.classList.remove('hidden');placeholder.classList.add('hidden');
+}
+loadPublicAdminNavPhoto();
