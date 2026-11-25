@@ -98,7 +98,71 @@ async function removeAdminPhoto(){
  $('adminPhotoPreview').removeAttribute('src');$('adminPhotoPreview').classList.add('hidden');$('adminPhotoPlaceholder').classList.remove('hidden');showAdminPhotoEditor(false);msg('adminPhotoMessage','Administrator photograph removed.');
 }
 function init(){if(!ready()||!window.supabase){$('setupWarning').classList.remove('hidden');$('setupWarning').textContent='Supabase is not configured. Open SETUP-V1.2.md and add your project URL and anon/public key to config.js.';$('loginPanel').classList.add('hidden');return;}client=window.supabase.createClient(CPIR_CONFIG.SUPABASE_URL,CPIR_CONFIG.SUPABASE_ANON_KEY);bindAdminActivityTracking();initAdminPhotoControls();client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){stopAdminIdleTimer();$('adminRecoveryPanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');$('adminPanel').classList.add('hidden');}else if(event!=='INITIAL_SESSION')setTimeout(checkSession,0);});$('adminResetPassword').addEventListener('click',sendAdminPasswordReset);$('adminRecoveryForm').addEventListener('submit',saveAdminNewPassword);checkSession();}
-async function checkSession(){const {data:{session}}=await client.auth.getSession();$('loginPanel').classList.toggle('hidden',!!session);$('adminPanel').classList.add('hidden');$('signOutBtn').classList.toggle('hidden',!session);$('subAdminsTab')?.setAttribute('hidden','');if(!session){stopAdminIdleTimer();return;}const {data:profile,error}=await client.from('admin_profiles').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!profile){stopAdminIdleTimer();msg('loginMessage','This account is signed in but has not been authorized as a portal administrator. Ask the project owner to grant admin access.');await client.auth.signOut();return;}$('adminPanel').classList.remove('hidden');const {data:isMainAdmin}=await client.rpc('is_portal_main_admin');if(isMainAdmin){$('subAdminsTab')?.removeAttribute('hidden');await loadSubAdmins();}await loadAdminPhoto(session.user);startAdminIdleTimer();restoreAdminScrollPosition();await loadAdminJobs();await loadCollectorSources();await loadFetchedJobs();await loadContactSettings();await loadCandidateUsers();}
+let currentAdminPermissions={"*":true};
+let currentAdminIsMain=false;
+function adminCan(permission){return currentAdminIsMain||currentAdminPermissions["*"]===true||currentAdminPermissions[permission]===true;}
+function applyAdminRoleNavigation(){
+ const access={jobs:adminCan("jobs.view")||adminCan("jobs.create"),users:adminCan("users.view"),contact:adminCan("content.view")||adminCan("contact.edit"),collector:adminCan("collector.view")||adminCan("collector.review")};
+ document.querySelectorAll("[data-admin-tab]").forEach(tab=>{const key=tab.dataset.adminTab;if(key in access)tab.classList.toggle("hidden",!access[key]);});
+ if(!adminCan("jobs.create")&&!adminCan("jobs.edit")){const form=$("jobForm");if(form)form.closest(".info-card,.admin-form")?.classList.add("hidden");}
+ if(!adminCan("jobs.import"))$("excelImportPanel")?.classList.add("hidden");
+ if(!currentAdminIsMain){$("collectorSourcesList")?.classList.add("hidden");document.querySelectorAll("#collectorSourcesList").forEach(x=>x.classList.add("hidden"));}
+}
+async function checkSession(){
+ const {data:{session}}=await client.auth.getSession();
+ $("loginPanel").classList.toggle("hidden",!!session);
+ $("adminPanel").classList.add("hidden");
+ $("subAdminPasswordPanel")?.classList.add("hidden");
+ $("signOutBtn").classList.toggle("hidden",!session);
+ $("subAdminsTab")?.setAttribute("hidden","");
+ if(!session){stopAdminIdleTimer();return;}
+ const {data:isMainAdmin,error:mainError}=await client.rpc("is_portal_main_admin");
+ currentAdminIsMain=!mainError&&isMainAdmin===true;
+ let account=null;
+ if(!currentAdminIsMain){
+  const {data,error}=await client.from("portal_admin_accounts").select("user_id,role_id,is_active,must_change_password,display_name").eq("user_id",session.user.id).maybeSingle();
+  account=data;
+  if(error||!account||!account.is_active){
+   stopAdminIdleTimer();msg("loginMessage","This administrator account is inactive or has not been authorised. Please contact the Main Admin.");
+   await client.auth.signOut();return;
+  }
+  if(account.must_change_password){
+   $("loginPanel").classList.add("hidden");$("subAdminPasswordPanel").classList.remove("hidden");stopAdminIdleTimer();return;
+  }
+  const {data:role,error:roleError}=await client.from("portal_admin_roles").select("permissions").eq("id",account.role_id).maybeSingle();
+  if(roleError||!role){msg("loginMessage","Your administrator role could not be loaded. Contact the Main Admin.");await client.auth.signOut();return;}
+  currentAdminPermissions=role.permissions||{};
+ }else{
+  currentAdminPermissions={"*":true};
+ }
+ $("loginPanel").classList.add("hidden");
+ $("adminPanel").classList.remove("hidden");
+ if(currentAdminIsMain){$("subAdminsTab")?.removeAttribute("hidden");await loadSubAdmins();}
+ applyAdminRoleNavigation();
+ await loadAdminPhoto(session.user);
+ startAdminIdleTimer();restoreAdminScrollPosition();
+ if(adminCan("jobs.view")||adminCan("jobs.create"))await loadAdminJobs();
+ if(currentAdminIsMain)await loadCollectorSources();
+ if(adminCan("collector.view")||adminCan("collector.review"))await loadFetchedJobs();
+ if(adminCan("content.view")||adminCan("contact.edit"))await loadContactSettings();
+ if(adminCan("users.view"))await loadCandidateUsers();
+}
+$("subAdminPasswordForm")?.addEventListener("submit",async e=>{
+ e.preventDefault();
+ const password=$("subAdminNewPassword").value,confirmPassword=$("subAdminConfirmPassword").value;
+ if(password.length<12){msg("subAdminPasswordMessage","Use at least 12 characters.");return;}
+ if(password!==confirmPassword){msg("subAdminPasswordMessage","The passwords do not match.");return;}
+ const button=$("saveSubAdminPasswordBtn");button.disabled=true;msg("subAdminPasswordMessage","Updating password…");
+ try{
+  const {error}=await client.auth.updateUser({password});
+  if(error)throw error;
+  const {error:completeError}=await client.rpc("complete_subadmin_password_change");
+  if(completeError)throw completeError;
+  $("subAdminPasswordForm").reset();msg("subAdminPasswordMessage","Password changed. Opening your assigned workspace…");
+  await checkSession();
+ }catch(error){msg("subAdminPasswordMessage",error.message||"Could not update the password. Please try again.");}
+ finally{button.disabled=false;}
+});
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();msg('loginMessage','Signing in…');try{const {error}=await client.auth.signInWithPassword({email:val('email'),password:$('password').value});msg('loginMessage',error?error.message:'Signed in.');if(!error)await checkSession();}catch(error){msg('loginMessage','Could not connect to the login service. Check your internet connection and try again. If it continues, contact the website administrator.');console.error('Admin sign-in connection error:',error);}});$('signOutBtn').addEventListener('click',async()=>{stopAdminIdleTimer();await client.auth.signOut();});$('clearFormBtn').addEventListener('click',clearForm);$('refreshBtn').addEventListener('click',loadAdminJobs);$('showAllJobs').addEventListener('click',()=>{$('adminJobs').classList.remove('hidden');$('expiredAdminJobs').classList.add('hidden');});$('showExpiredJobs').addEventListener('click',()=>{$('adminJobs').classList.add('hidden');$('expiredAdminJobs').classList.remove('hidden');});
 function clearForm(){editingId=null;$('jobForm').reset();$('editId').value='';if($('fDescriptionEditor'))$('fDescriptionEditor').innerHTML='';msg('formMessage','');}
 function normalizeDuplicateUrl(value){try{const u=new URL(String(value||'').trim());u.hash='';u.search='';return u.toString().replace(/\/$/,'').toLowerCase();}catch{return String(value||'').trim().replace(/\/$/,'').toLowerCase();}}
@@ -618,7 +682,7 @@ async function loadSubAdmins(){
  if(!rows.length){$('subAdminsList').innerHTML='<p>No sub-admin accounts have been created yet.</p>';return;}
  $('subAdminsList').innerHTML=rows.map(a=>{
   const roleOptions=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'" '+(r.id===a.role_id?'selected':'')+'>'+esc(r.label)+'</option>').join('');
-  return '<div class="admin-row" data-subadmin-id="'+esc(a.user_id)+'"><div><strong>'+esc(a.display_name||'Sub-Admin')+'</strong><span>'+esc(a.email||'')+'</span><span>Created: '+(a.created_at?new Date(a.created_at).toLocaleDateString():'—')+' · '+(a.is_active?'Active':'Inactive / pending Stage 3')+'</span></div><div class="admin-actions"><select class="subadmin-role-select" aria-label="Role for '+esc(a.display_name)+'">'+roleOptions+'</select><button type="button" class="secondary-btn subadmin-save-role">Save role</button><button type="button" class="danger-btn subadmin-deactivate" '+(!a.is_active?'disabled':'')+'>Deactivate</button></div></div>';
+  return '<div class="admin-row" data-subadmin-id="'+esc(a.user_id)+'"><div><strong>'+esc(a.display_name||'Sub-Admin')+'</strong><span>'+esc(a.email||'')+'</span><span>Created: '+(a.created_at?new Date(a.created_at).toLocaleDateString():'—')+' · '+(a.is_active?(a.must_change_password?'Active · password change required':'Active'):'Inactive')+'</span></div><div class="admin-actions"><select class="subadmin-role-select" aria-label="Role for '+esc(a.display_name)+'">'+roleOptions+'</select><button type="button" class="secondary-btn subadmin-save-role">Save role</button>'+(a.is_active?'<button type="button" class="danger-btn subadmin-deactivate">Deactivate</button>':'<button type="button" class="secondary-btn subadmin-activate">Activate</button>')+'</div></div>';
  }).join('');
  $('subAdminsList').querySelectorAll('.subadmin-save-role').forEach(btn=>btn.addEventListener('click',async()=>{
   const row=btn.closest('[data-subadmin-id]');btn.disabled=true;
@@ -628,6 +692,11 @@ async function loadSubAdmins(){
  $('subAdminsList').querySelectorAll('.subadmin-deactivate').forEach(btn=>btn.addEventListener('click',async()=>{
   const row=btn.closest('[data-subadmin-id]');if(!confirm('Deactivate '+row.querySelector('strong').textContent+'?'))return;btn.disabled=true;
   try{const result=await callSubAdminManager({action:'deactivate',user_id:row.dataset.subadminId});msg('subAdminMessage',result.message);await loadSubAdmins();}
+  catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
+ }));
+ $('subAdminsList').querySelectorAll('.subadmin-activate').forEach(btn=>btn.addEventListener('click',async()=>{
+  const row=btn.closest('[data-subadmin-id]');if(!confirm('Activate '+row.querySelector('strong').textContent+'? They will still need to change their temporary password.'))return;btn.disabled=true;
+  try{const result=await callSubAdminManager({action:'activate',user_id:row.dataset.subadminId});msg('subAdminMessage',result.message);await loadSubAdmins();}
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
 }
