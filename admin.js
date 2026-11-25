@@ -189,7 +189,7 @@ async function loadAdminJobs(){
  const active=(data||[]).filter(j=>!expired.includes(j));
  const render=(items,target,isExpired)=>{
   if(!items.length){target.innerHTML='<div class="info-card"><p>'+(isExpired?'There are no expired jobs.':'No active, draft or archived jobs found.')+'</p></div>';return;}
-  target.innerHTML=items.map(j=>'<div class="admin-row"><div><strong>'+esc(j.title)+'</strong><span>'+esc(j.organization)+' · '+esc(j.city)+' · '+esc(j.category)+'</span><span>Deadline: '+esc(j.deadline||'Not specified')+'</span><span class="status-pill">'+esc(j.status)+'</span></div><div class="admin-actions"><button class="secondary-btn" data-edit="'+j.id+'">Edit</button>'+(isExpired?'<button class="secondary-btn" data-restore="'+j.id+'">Restore</button>':'')+'<button class="danger-btn" data-delete="'+j.id+'">Delete</button></div></div>').join('');
+  target.innerHTML=items.map(j=>'<div class="admin-row"><div><strong>'+esc(j.title)+'</strong><span>'+esc(j.organization)+' · '+esc(j.city)+' · '+esc(j.category)+'</span><span>Deadline: '+esc(j.deadline||'Not specified')+'</span><span class="status-pill">'+esc(j.status)+'</span></div><div class="admin-actions">'+(adminCan('jobs.edit')?'<button class="secondary-btn" data-edit="'+j.id+'">Edit</button>':'')+(isExpired&&adminCan('jobs.publish')?'<button class="secondary-btn" data-restore="'+j.id+'">Restore</button>':'')+(adminCan('jobs.archive')?'<button class="danger-btn" data-delete="'+j.id+'">Delete</button>':'')+'</div></div>').join('');
   target.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editJob(items.find(j=>j.id===b.dataset.edit))));
   target.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>deleteJob(b.dataset.delete)));
   target.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click',()=>restoreJob(items.find(j=>j.id===b.dataset.restore))));
@@ -228,6 +228,7 @@ async function loadContactSettings(){
   Object.entries(contactFields).forEach(([id,key])=>$(id).value=data?.[key]||'');
   msg('contactMessage',data?'Saved contact details loaded.':'No contact details saved yet.');
 }
+if(!adminCan('contact.edit'))$('contactForm')?.classList.add('hidden');
 $('contactForm')?.addEventListener('submit',async e=>{
   e.preventDefault();
   const record={id:1};
@@ -618,6 +619,7 @@ async function loadCollectorSources(){
 let fetchedJobsCache=[];
 async function loadFetchedJobs(){
  const box=$('fetchedJobsList');if(!box||!client)return;
+ if(!adminCan('collector.review')){$('loadCollectorSamples')?.classList.add('hidden');$('reviewFetchedSelected')?.classList.add('hidden');}
  box.innerHTML='<p>Loading fetched vacancies…</p>';
  const {data,error}=await client.from('fetched_jobs').select('*').order('fetched_at',{ascending:false}).limit(500);
  if(error){
