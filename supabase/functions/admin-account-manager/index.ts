@@ -99,8 +99,8 @@ Deno.serve(async (req) => {
     if (!roleId || roleId === "super_admin") return reply({ error: "A sub-admin cannot be assigned the Main Admin role." }, 400);
     const { data: role } = await adminClient.from("portal_admin_roles").select("id").eq("id", roleId).maybeSingle();
     if (!role) return reply({ error: "The selected role is not available." }, 400);
-    const { data: target } = await adminClient.from("portal_admin_accounts").select("user_id").eq("user_id", targetId).maybeSingle();
-    if (!target || targetId === actor.id) return reply({ error: "That sub-admin account cannot be changed." }, 404);
+    const { data: target } = await adminClient.from("portal_admin_accounts").select("user_id,role_id").eq("user_id", targetId).maybeSingle();
+    if (!target || target.role_id === "super_admin" || targetId === actor.id) return reply({ error: "That sub-admin account cannot be changed." }, 404);
     const { error } = await adminClient.from("portal_admin_accounts")
       .update({ role_id: roleId, updated_at: new Date().toISOString() }).eq("user_id", targetId);
     if (error) return reply({ error: error.message }, 500);
@@ -113,16 +113,38 @@ Deno.serve(async (req) => {
 
   if (action === "deactivate") {
     if (targetId === actor.id) return reply({ error: "You cannot deactivate your own Main Admin account." }, 400);
-    const { data: target } = await adminClient.from("portal_admin_accounts").select("user_id").eq("user_id", targetId).maybeSingle();
-    if (!target) return reply({ error: "Sub-admin account not found." }, 404);
+    const { data: target } = await adminClient.from("portal_admin_accounts").select("user_id,role_id").eq("user_id", targetId).maybeSingle();
+    if (!target || target.role_id === "super_admin") return reply({ error: "Sub-admin account not found." }, 404);
     const { error } = await adminClient.from("portal_admin_accounts")
       .update({ is_active: false, updated_at: new Date().toISOString() }).eq("user_id", targetId);
     if (error) return reply({ error: error.message }, 500);
+    await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: targetId,
       action: "subadmin_deactivated", details: {},
     });
-    return reply({ ok: true, message: "Sub-admin marked inactive. Stage 3 will enforce this status at sign-in and for existing sessions." });
+    return reply({ ok: true, message: "Sub-admin deactivated. Database permissions are blocked immediately and Auth sign-in is suspended." });
+  }
+
+  if (action === "activate") {
+    const { data: target } = await adminClient.from("portal_admin_accounts")
+      .select("user_id,role_id").eq("user_id", targetId).maybeSingle();
+    if (!target || target.role_id === "super_admin" || targetId === actor.id) {
+      return reply({ error: "Sub-admin account not found." }, 404);
+    }
+    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "none" });
+    if (authUpdateError) return reply({ error: "Could not restore Auth access: " + authUpdateError.message }, 500);
+    const { error } = await adminClient.from("portal_admin_accounts")
+      .update({ is_active: true, updated_at: new Date().toISOString() }).eq("user_id", targetId);
+    if (error) {
+      await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
+      return reply({ error: "Could not activate account: " + error.message }, 500);
+    }
+    await adminClient.from("portal_admin_activity").insert({
+      actor_user_id: actor.id, target_user_id: targetId,
+      action: "subadmin_activated", details: {},
+    });
+    return reply({ ok: true, message: "Sub-admin activated. They must still change their temporary password before accessing the dashboard." });
   }
 
   return reply({ error: "Unsupported action." }, 400);
