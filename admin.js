@@ -619,7 +619,8 @@ async function loadCollectorSources(){
 let fetchedJobsCache=[];
 async function loadFetchedJobs(){
  const box=$('fetchedJobsList');if(!box||!client)return;
- if(!adminCan('collector.review')){$('loadCollectorSamples')?.classList.add('hidden');$('reviewFetchedSelected')?.classList.add('hidden');}
+ if(!currentAdminIsMain)$('loadCollectorSamples')?.classList.add('hidden');
+ if(!adminCan('jobs.create'))$('reviewFetchedSelected')?.classList.add('hidden');
  box.innerHTML='<p>Loading fetched vacancies…</p>';
  const {data,error}=await client.from('fetched_jobs').select('*').order('fetched_at',{ascending:false}).limit(500);
  if(error){
