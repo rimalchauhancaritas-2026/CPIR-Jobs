@@ -680,7 +680,7 @@ body.disclaimer-open{overflow:hidden}
 .resume-upload-copy{flex:1 1 280px}
 .resume-upload-copy strong{display:block;color:#17365d;font-size:14px}
 .resume-upload-copy p{margin:5px 0 0;color:#687d91;font-size:12px;line-height:1.55}
-.admin-form .resume-file-label{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cfdde9;border-radius:9px;background:#fff;color:#17365d;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer}
+.admin-form .resume-file-label,.resume-upload-panel>.primary-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;min-width:145px;width:auto;margin:0;border:1px solid #cfdde9;border-radius:8px;background:#fff;color:#17365d;padding:8px 14px;font-size:12px;font-weight:700;line-height:1.2;box-shadow:none;cursor:pointer;flex:0 0 auto}.resume-upload-panel>.primary-btn:hover{background:#edf4fa;border-color:#aebfd0;color:#17365d}.resume-upload-panel>.primary-btn:disabled{opacity:.6;cursor:wait}.resume-upload-panel{gap:12px}.resume-upload-copy{flex:1 1 100%;width:100%}
 .resume-file-label input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 .resume-library-message{font-size:12px;color:#08765b;min-height:18px;margin:12px 0}
 .resume-library-list{display:grid;gap:10px}
@@ -693,4 +693,4 @@ body.disclaimer-open{overflow:hidden}
 .resume-file-actions button{font-size:11px;padding:8px 11px}
 .resume-file-actions .danger-btn{border:1px solid #f0c9c5;background:#fff;color:#b42318;border-radius:9px;font-weight:800;cursor:pointer}
 .resume-empty,.resume-privacy-note{font-size:12px;color:#718398}
-@media(max-width:650px){.resume-file-card{align-items:flex-start;flex-direction:column}.resume-file-actions{width:100%}.resume-upload-panel{align-items:stretch}.resume-file-label,.resume-upload-panel>.primary-btn{width:100%}}
+@media(max-width:650px){.resume-file-card{align-items:flex-start;flex-direction:column}.resume-file-actions{width:100%}.resume-upload-panel{align-items:flex-start}.resume-file-label,.resume-upload-panel>.primary-btn{width:auto;min-width:135px}}
