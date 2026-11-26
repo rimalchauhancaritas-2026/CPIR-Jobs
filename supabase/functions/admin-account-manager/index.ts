@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       actor_user_id: actor.id, target_user_id: targetId,
       action: "subadmin_activated", details: {},
     });
-    return reply({ ok: true, message: "Sub-admin activated. They must still change their temporary password before accessing the dashboard." });
+    return reply({ ok: true, message: "Sub-admin activated. They must change their password before accessing the dashboard." });
   }
 
   return reply({ error: "Unsupported action." }, 400);
