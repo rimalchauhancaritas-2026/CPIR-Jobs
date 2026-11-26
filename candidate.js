@@ -272,6 +272,16 @@ function groupExperienceEntries(lines){
  // together as one reviewable experience instead of scattering individual lines.
  return groups.length===1&& !source.some(isJobHeading) ? [source.join('\n')] : groups;
 }
+function groupQualificationEntries(lines){
+ const source=(lines||[]).map(line=>String(line||'').trim()).filter(Boolean);
+ if(!source.length)return [];
+ // Keep each qualification/course and its institution, dates and grade together.
+ // A pipe-delimited line marks the start of a new entry, just like work experience.
+ // If the resume has no clear entry markers, keep the section together for review
+ // rather than incorrectly treating every line as a separate qualification.
+ const hasEntryMarkers=source.some(line=>line.length<=220&&line.split('|').filter(part=>part.trim()).length>=2);
+ return hasEntryMarkers?groupExperienceEntries(source):[source.join('\n')];
+}
 function guessResumeFields(rawText){
  const lines=cleanExtractedLines(rawText),joined=lines.join('\n');
  const email=joined.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||'';
@@ -292,7 +302,7 @@ function guessResumeFields(rawText){
  const summary=sections.other?.filter(x=>x.length>45).slice(0,4).join(' ')||'';
  const list=(key)=> (sections[key]||[]).filter(x=>x.length>2&&!/^(email|phone|mobile|address|location)\s*:/i.test(x)).slice(0,12);
  return {cvName:nameCandidate,cvEmail:email,cvPhone:phone,cvCnic:cnic,cvWebsite:url?(/^https?:\/\//i.test(url)?url:'https://'+url):'',cvSummary:summary,
-  educationEntries:list('education'),experienceEntries:groupExperienceEntries(sections.experience||[]),skillsEntries:list('skills'),languageEntries:list('languages'),trainingEntries:list('certifications'),referenceEntries:list('references_text')};
+  educationEntries:groupQualificationEntries(sections.education||[]),experienceEntries:groupExperienceEntries(sections.experience||[]),skillsEntries:list('skills'),languageEntries:list('languages'),trainingEntries:groupQualificationEntries(sections.certifications||[]),referenceEntries:list('references_text')};
 }
 async function extractResumeText(file,resume){
  if(resume.file_type==='doc')throw new Error('This is an older Word (.doc) file. It is safely stored, but automatic text extraction currently supports PDF and DOCX. Please open it in Word and save a copy as .docx, then upload that copy.');
