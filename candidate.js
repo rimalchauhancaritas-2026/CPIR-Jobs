@@ -8,6 +8,15 @@ function repeatValues(id){return [...($(id)?.querySelectorAll('textarea')||[])].
 function renderRepeater(id,values=[]){const box=$(id),cfg=repeatConfig[id];if(!box||!cfg)return;const items=[...values];while(items.length<cfg.min)items.push('');box.innerHTML='';items.forEach((value,index)=>{const card=document.createElement('div');card.className='repeatable-entry';const head=document.createElement('div');head.className='entry-heading';const title=document.createElement('span');title.textContent=cfg.label+' '+(index+1);head.appendChild(title);if(items.length>cfg.min){const del=document.createElement('button');del.type='button';del.className='entry-remove';del.textContent='Remove';del.dataset.removeEntry=id;del.dataset.index=index;head.appendChild(del);}const label=document.createElement('label');label.textContent=cfg.label+' details';const area=document.createElement('textarea');area.rows=3;area.maxLength=2500;area.placeholder=cfg.placeholder;area.value=value;label.appendChild(area);card.append(head,label);box.appendChild(card);});}
 function collectRepeaters(){return Object.fromEntries(Object.keys(repeatConfig).map(id=>[id,JSON.stringify(repeatValues(id))]));}
 function loadRepeaters(data){const keys={educationEntries:'education',experienceEntries:'experience',skillsEntries:'skills',languageEntries:'languages',trainingEntries:'certifications',referenceEntries:'references_text'};Object.entries(keys).forEach(([id,key])=>renderRepeater(id,parseEntries(data?.[key]||'')));}
+function showCvWorkflow(view){
+ const choice=$('cvChoiceScreen'),build=$('buildCvPanel'),upload=$('uploadCvPanel');
+ if(!choice||!build||!upload)return;
+ choice.classList.toggle('hidden',view!=='choice');
+ build.classList.toggle('hidden',view!=='build');
+ upload.classList.toggle('hidden',view!=='upload');
+ const target=view==='build'?build:view==='upload'?upload:choice;
+ target.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function updateProfileProgress(){const ids=['cvName','cvEmail','cvPhone','cvSummary'];const done=ids.filter(id=>$(id)?.value.trim()).length+(repeatValues('educationEntries').length?1:0)+(repeatValues('skillsEntries').length?1:0);const total=ids.length+2;const pct=Math.round(done/total*100);if($('profileProgressValue'))$('profileProgressValue').textContent=pct+'%';if($('profileProgressBar'))$('profileProgressBar').style.width=pct+'%';if($('profileProgressText'))$('profileProgressText').textContent=pct===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':done+' of '+total+' required profile items completed. Complete the remaining sections to finish your CV.';}
 function initCandidate(){
  if(!window.supabase||!window.CPIR_CONFIG?.SUPABASE_URL||!window.CPIR_CONFIG?.SUPABASE_ANON_KEY){say('signupMessage','Supabase configuration is missing.');return;}
@@ -17,6 +26,10 @@ function initCandidate(){
  $('signupForm').addEventListener('submit',signup);
  $('loginForm').addEventListener('submit',login);
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
+ $('chooseBuildCv').addEventListener('click',()=>showCvWorkflow('build'));
+ $('chooseUploadCv').addEventListener('click',()=>showCvWorkflow('upload'));
+ $('backFromBuildCv').addEventListener('click',()=>showCvWorkflow('choice'));
+ $('backFromUploadCv').addEventListener('click',()=>showCvWorkflow('choice'));
  $('resetPassword').onclick=resetPassword;
  $('saveAlertPreferences').onclick=saveAlertPreferences;
  $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',()=>{updateProfileProgress();renderCvPreview();});
@@ -49,7 +62,7 @@ async function login(e){e.preventDefault();say('loginMessage','Signing in…');t
 
 async function resetPassword(){const email=$('loginEmail').value.trim();if(!email){say('loginMessage','Enter your email address first.');return;}say('loginMessage','Requesting password reset…');try{const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:'https://rimalchauhancaritas-2026.github.io/CPIR-Jobs/candidate.html'});say('loginMessage',error?error.message:'If an account exists for this email, a password reset link has been sent. Check your inbox and spam folder.');}catch(error){say('loginMessage','Could not reach the password reset service. Check your internet connection and try again.');console.error(error);}}
 async function saveCandidateNewPassword(e){e.preventDefault();const password=$('candidateNewPassword').value;if(password.length<8){say('candidateRecoveryMessage','Use at least 8 characters.');return;}say('candidateRecoveryMessage','Saving new password…');try{const {error}=await client.auth.updateUser({password});if(error){say('candidateRecoveryMessage',error.message);return;}say('candidateRecoveryMessage','Password updated successfully.');$('candidateRecoveryPanel').classList.add('hidden');const {data}=await client.auth.getSession();await showSession(data.session);}catch(error){say('candidateRecoveryMessage','Could not update the password. Please open the reset link again and retry.');console.error(error);}}
-async function showSession(session){currentUser=session?.user||null;$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);setCandidateNavPhoto(null);
+async function showSession(session){currentUser=session?.user||null;showCvWorkflow('choice');$('candidateDashboard').classList.toggle('hidden',!currentUser);$('signup').classList.toggle('hidden',!!currentUser);setCandidateNavPhoto(null);
  if(!currentUser){photoPath=null;photoDataUrl=null;setAccountPhotoPreview(null);return;}
  await loadAccountPhoto(currentUser);
  await loadResumeLibrary();
