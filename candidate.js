@@ -173,6 +173,15 @@ function renderCvPreview(){
  const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  target.innerHTML=cvHeaderHtml(esc,val)+cvSections(esc,val);
 }
+
+function refreshCvPreviewFromForm(){
+ const form=$('cvForm');
+ if(form){
+  form.querySelectorAll('input:not([type="file"]),textarea,select').forEach(control=>control.dispatchEvent(new Event('input',{bubbles:true})));
+ }
+ updateProfileProgress();
+ renderCvPreview();
+}
 function downloadCv(){if(!currentUser){say('cvMessage','Please sign in first.');return;}
  const val=id=>$(id).value.trim(),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const sections=cvSections(esc,val),header=cvHeaderHtml(esc,val);
@@ -313,7 +322,7 @@ async function importResumeToCv(resume){
   if(fields.cvSummary)$('cvSummary').value=fields.cvSummary;
   const map={educationEntries:'educationEntries',experienceEntries:'experienceEntries',skillsEntries:'skillsEntries',languageEntries:'languageEntries',trainingEntries:'trainingEntries',referenceEntries:'referenceEntries'};
   Object.entries(map).forEach(([id,key])=>{if(fields[key]?.length)renderRepeater(id,fields[key]);});
-  updateProfileProgress();renderCvPreview();
+  refreshCvPreviewFromForm();
   document.getElementById('personalSection')?.scrollIntoView({behavior:'smooth',block:'start'});
   const found=Object.values(fields).filter(v=>Array.isArray(v)?v.length>0:!!v).length;
   say('resumeLibraryMessage','Resume text extracted. '+found+' types of details were detected. Please review every field, correct anything inaccurate, add missing information, then click Save profile & CV. Your original file remains unchanged.');
