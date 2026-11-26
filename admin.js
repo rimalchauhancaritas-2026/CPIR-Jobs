@@ -120,7 +120,7 @@ async function checkSession(){
  currentAdminIsMain=!mainError&&isMainAdmin===true;
  let account=null;
  if(!currentAdminIsMain){
-  const {data,error}=await client.from("portal_admin_accounts").select("user_id,role_id,is_active,must_change_password,display_name").eq("user_id",session.user.id).maybeSingle();
+  const {data,error}=await client.from("portal_admin_accounts").select("user_id,role_id,role_ids,is_active,must_change_password,display_name").eq("user_id",session.user.id).maybeSingle();
   account=data;
   if(error||!account||!account.is_active){
    stopAdminIdleTimer();msg("loginMessage","This administrator account is inactive or has not been authorised. Please contact the Main Admin.");
@@ -684,7 +684,7 @@ async function loadSubAdmins(){
  if(!$('subAdminsList'))return;
  $('subAdminsList').innerHTML='<p>Loading…</p>';
  const [{data:accounts,error:accountError},{data:roles,error:roleError}]=await Promise.all([
-  client.from('portal_admin_accounts').select('user_id,email,display_name,role_id,is_active,must_change_password,created_at,last_login_at').order('created_at',{ascending:false}),
+  client.from('portal_admin_accounts').select('user_id,email,display_name,role_id,role_ids,is_active,must_change_password,created_at,last_login_at').order('created_at',{ascending:false}),
   client.from('portal_admin_roles').select('id,label,description').neq('id','super_admin').order('label')
  ]);
  if(accountError||roleError){$('subAdminsList').innerHTML='<p class="error-text">'+esc(accountError?.message||roleError?.message)+'</p>';return;}
