@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const displayNameInput = String(body.display_name ?? "").trim();
     const roleId = String(body.role_id ?? "");
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return reply({ error: "Enter the candidate's registered email address." }, 400);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ error: "Enter the candidate's registered email address." }, 400);
     if (displayNameInput.length > 120) return reply({ error: "Name must be 120 characters or fewer." }, 400);
     if (!roleId || roleId === "super_admin") return reply({ error: "Choose a permitted sub-admin role." }, 400);
 
