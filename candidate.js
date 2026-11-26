@@ -19,8 +19,8 @@ function initCandidate(){
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
  $('resetPassword').onclick=resetPassword;
  $('saveAlertPreferences').onclick=saveAlertPreferences;
- $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',updateProfileProgress);
- $('cvForm').addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const id=add.dataset.add;renderRepeater(id,[...repeatValues(id),'']);updateProfileProgress();return;}const del=e.target.closest('[data-remove-entry]');if(del){const id=del.dataset.removeEntry,values=[...($(id)?.querySelectorAll('textarea')||[])].map(x=>x.value);values.splice(Number(del.dataset.index),1);renderRepeater(id,values);updateProfileProgress();}});
+ $('cvForm').addEventListener('submit',saveCv); $('cvForm').addEventListener('input',()=>{updateProfileProgress();renderCvPreview();});
+ $('cvForm').addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const id=add.dataset.add;renderRepeater(id,[...repeatValues(id),'']);updateProfileProgress();renderCvPreview();return;}const del=e.target.closest('[data-remove-entry]');if(del){const id=del.dataset.removeEntry,values=[...($(id)?.querySelectorAll('textarea')||[])].map(x=>x.value);values.splice(Number(del.dataset.index),1);renderRepeater(id,values);updateProfileProgress();renderCvPreview();}});
  Object.keys(repeatConfig).forEach(id=>renderRepeater(id));
  $('downloadCv').onclick=downloadCv; $('downloadWord').onclick=downloadWord;
  initAccountPhotoControls();
@@ -60,7 +60,7 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  photoPath=data.photo_path||null;
  if(photoPath)await loadSavedPhoto(photoPath);else setPhotoPreview(null);
  }else{$('cvName').value=currentUser.user_metadata?.full_name||'';$('cvEmail').value=currentUser.email||'';loadRepeaters({});setPhotoPreview(null);}
- updateProfileProgress();
+ updateProfileProgress();renderCvPreview();
 }
 
 async function loadAlertPreferences(){
@@ -156,21 +156,31 @@ async function saveCv(e){e.preventDefault();if(!currentUser)return;
 }
 function cvHeaderHtml(esc,val){return (photoDataUrl?'<img class="cv-photo" src="'+photoDataUrl+'" alt="Profile photograph">':'')+'<h1>'+esc(val('cvName'))+'</h1><p class="contact">'+esc(val('cvEmail'))+' · '+esc(val('cvPhone'))+' · '+esc(val('cvCity'))+'<br>'+esc(val('cvAddress'))+'<br>'+esc(val('cvWebsite'))+'</p>';}
 function cvSections(esc,val){
- const profile=val('cvSummary')?'<h2>Professional Profile</h2><p>'+esc(val('cvSummary')).replace(/\\n/g,'<br>')+'</p>':'';
- const groups=[['Education','educationEntries'],['Work Experience','experienceEntries'],['Skills','skillsEntries'],['Languages','languageEntries'],['Certifications & Training','trainingEntries'],['References','referenceEntries']];
- return profile+groups.map(([title,id])=>{const items=repeatValues(id);return items.length?'<h2>'+title+'</h2>'+items.map(item=>'<p>'+esc(item).replace(/\\n/g,'<br>')+'</p>').join(''):'';}).join('');
+ const lineBreaks=value=>esc(value).replace(/\r?\n/g,'<br>');
+ const profile=val('cvSummary')?'<h2>Professional Profile</h2><p>'+lineBreaks(val('cvSummary'))+'</p>':'';
+ const bulletGroups=[['Education','educationEntries'],['Skills','skillsEntries'],['Languages','languageEntries'],['Certifications & Training','trainingEntries'],['References','referenceEntries']];
+ const bullets=bulletGroups.map(([title,id])=>{const items=repeatValues(id);return items.length?'<h2>'+title+'</h2><ul class="cv-bullet-list">'+items.map(item=>'<li>'+lineBreaks(item)+'</li>').join('')+'</ul>':'';}).join('');
+ const experience=repeatValues('experienceEntries');
+ const work=experience.length?'<h2>Work Experience</h2>'+experience.map(item=>'<div class="cv-entry"><p>'+lineBreaks(item)+'</p></div>').join(''):'';
+ return profile+bullets+work;
+}
+function renderCvPreview(){
+ const target=$('cvLivePreview');if(!target)return;
+ const val=id=>$(id)?.value.trim()||'';
+ const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ target.innerHTML=cvHeaderHtml(esc,val)+cvSections(esc,val);
 }
 function downloadCv(){if(!currentUser){say('cvMessage','Please sign in first.');return;}
  const val=id=>$(id).value.trim(),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const sections=cvSections(esc,val),header=cvHeaderHtml(esc,val);
  const w=window.open('','_blank');if(!w){say('cvMessage','Allow pop-ups to print or save your CV.');return;}
- w.document.write('<!doctype html><html><head><title>CV - '+esc(val('cvName'))+'</title><style>body{font:14px Arial,sans-serif;max-width:800px;margin:40px auto;color:#183650;line-height:1.55}h1{color:#082f55;margin-bottom:4px}h2{font-size:17px;color:#0878c9;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:24px}p{white-space:normal}.contact{color:#526779}.cv-photo{width:115px;height:115px;object-fit:cover;float:right;border-radius:5px}@media print{body{margin:18mm}}</style></head><body>'+header+sections+'<script>window.onload=()=>window.print()<\/script></body></html>');
+ w.document.write('<!doctype html><html><head><title>CV - '+esc(val('cvName'))+'</title><style>body{font:14px Arial,sans-serif;max-width:800px;margin:40px auto;color:#183650;line-height:1.55}h1{color:#082f55;margin-bottom:4px}h2{font-size:17px;color:#0878c9;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:24px}p{white-space:normal}.cv-bullet-list{padding-left:22px;margin:8px 0 14px}.cv-bullet-list li{margin:4px 0;padding-left:3px}.cv-entry{margin:8px 0}.contact{color:#526779}.cv-photo{width:115px;height:115px;object-fit:cover;float:right;border-radius:5px}@media print{body{margin:18mm}}</style></head><body>'+header+sections+'<script>window.onload=()=>window.print()<\/script></body></html>');
  w.document.close();
 }
 function downloadWord(){if(!currentUser){say('cvMessage','Please sign in first.');return;}
  const val=id=>$(id).value.trim(),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const body=cvSections(esc,val),header=cvHeaderHtml(esc,val);
- const doc='<!doctype html><html><head><meta charset="utf-8"><title>CV - '+esc(val('cvName'))+'</title><style>body{font:11pt Calibri,Arial;color:#183650}h1{color:#082f55}h2{color:#0878c9;border-bottom:1px solid #ccc}p{line-height:1.4}.cv-photo{width:115px;height:115px;object-fit:cover;float:right}</style></head><body>'+header+body+'</body></html>';
+ const doc='<!doctype html><html><head><meta charset="utf-8"><title>CV - '+esc(val('cvName'))+'</title><style>body{font:11pt Calibri,Arial;color:#183650}h1{color:#082f55}h2{color:#0878c9;border-bottom:1px solid #ccc}p{line-height:1.4}.cv-bullet-list{padding-left:22px;margin:8px 0 14px}.cv-bullet-list li{margin:4px 0}.cv-entry{margin:8px 0}.cv-photo{width:115px;height:115px;object-fit:cover;float:right}</style></head><body>'+header+body+'</body></html>';
  const blob=new Blob(['\ufeff',doc],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=(val('cvName')||'My-CV').replace(/[^a-z0-9-_]/gi,'_')+'.doc';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
