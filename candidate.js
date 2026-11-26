@@ -19,11 +19,14 @@ function showCvWorkflow(view){
 }
 function openCvWorkflow(view){
  if(view==='build'||view==='upload'){
-  const url=new URL(window.location.href);
-  url.hash=view==='build'?'build-cv':'upload-cv';
-  window.history.pushState({...window.history.state,cvWorkflow:view},'',url);
+  const hash=view==='build'?'#build-cv':'#upload-cv';
+  if(window.location.hash!==hash)window.location.hash=hash;
  }
  showCvWorkflow(view);
+}
+function restoreCvWorkflowFromUrl(){
+ const hash=window.location.hash;
+ showCvWorkflow(hash==='#build-cv'?'build':hash==='#upload-cv'?'upload':'choice');
 }
 function updateProfileProgress(){const ids=['cvName','cvEmail','cvPhone','cvSummary'];const done=ids.filter(id=>$(id)?.value.trim()).length+(repeatValues('educationEntries').length?1:0)+(repeatValues('skillsEntries').length?1:0);const total=ids.length+2;const pct=Math.round(done/total*100);if($('profileProgressValue'))$('profileProgressValue').textContent=pct+'%';if($('profileProgressBar'))$('profileProgressBar').style.width=pct+'%';if($('profileProgressText'))$('profileProgressText').textContent=pct===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':done+' of '+total+' required profile items completed. Complete the remaining sections to finish your CV.';}
 function initCandidate(){
@@ -36,7 +39,8 @@ function initCandidate(){
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
  $('chooseBuildCv').addEventListener('click',()=>openCvWorkflow('build'));
  $('chooseUploadCv').addEventListener('click',()=>openCvWorkflow('upload'));
- window.addEventListener('popstate',event=>{if(currentUser)showCvWorkflow(event.state?.cvWorkflow||'choice');});
+ window.addEventListener('hashchange',()=>{if(currentUser)restoreCvWorkflowFromUrl();});
+ window.addEventListener('popstate',()=>{if(currentUser)restoreCvWorkflowFromUrl();});
  $('backFromBuildCv').addEventListener('click',()=>showCvWorkflow('choice'));
  $('backFromUploadCv').addEventListener('click',()=>showCvWorkflow('choice'));
  $('resetPassword').onclick=resetPassword;
