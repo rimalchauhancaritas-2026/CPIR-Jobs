@@ -255,7 +255,7 @@ async function extractResumeText(file,resume){
   window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
   const pages=[];
-  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent();pages.push(content.items.map(item=>item.str).join(' '));}
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent(),rows=new Map();for(const item of content.items){const value=String(item.str||'').trim();if(!value)continue;const y=Math.round(item.transform?.[5]||0);rows.set(y,(rows.get(y)||'')+' '+value);}pages.push([...rows.entries()].sort((a,b)=>b[0]-a[0]).map(row=>row[1].trim()).join('\n'));}
   return pages.join('\n');
  }
  if(resume.file_type==='docx'){
@@ -275,7 +275,7 @@ async function importResumeToCv(resume){
   const fields=guessResumeFields(text);
   const controls=['cvName','cvEmail','cvPhone','cvCnic','cvCity','cvAddress','cvWebsite','cvSummary'];
   const existing=controls.some(id=>$(id)?.value.trim())||Object.keys(repeatConfig).some(id=>repeatValues(id).length);
-  if(existing&&!window.confirm('Importing will replace the current entries in your CV form with information detected in this resume. Your saved CV and original uploaded file will not be changed until you review and click Save profile & CV. Continue?')){say('resumeLibraryMessage','Import cancelled. Your CV has not been changed.');return;}
+  if(existing&&!window.confirm('Importing will fill the CV form with information detected in this resume. Sections where no information is detected will be left as they are. Your saved CV and original uploaded file will not be changed until you review and click Save profile & CV. Continue?')){say('resumeLibraryMessage','Import cancelled. Your CV has not been changed.');return;}
   Object.entries({cvName:'cvName',cvEmail:'cvEmail',cvPhone:'cvPhone',cvCnic:'cvCnic',cvWebsite:'cvWebsite',cvSummary:'cvSummary'}).forEach(([id,key])=>{if(fields[key])$(id).value=fields[key];});
   if(fields.cvName&&!$('cvName').value.trim())$('cvName').value=fields.cvName;
   if(fields.cvEmail)$('cvEmail').value=fields.cvEmail;
