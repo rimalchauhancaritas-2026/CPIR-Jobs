@@ -194,10 +194,107 @@ const RESUME_TYPES={pdf:{mime:'application/pdf',signature:'pdf'},doc:{mime:'appl
 function resumeFileType(file){const ext=(file.name.split('.').pop()||'').toLowerCase();return RESUME_TYPES[ext]?{ext,...RESUME_TYPES[ext]}:null;}
 async function resumeSignatureMatches(file,type){const bytes=new Uint8Array(await file.slice(0,8).arrayBuffer());if(type.signature==='pdf')return bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-';if(type.signature==='doc')return [0xD0,0xCF,0x11,0xE0,0xA1,0xB1,0x1A,0xE1].every((v,i)=>bytes[i]===v);if(type.signature==='zip')return bytes[0]===0x50&&bytes[1]===0x4B&&(bytes[2]===0x03||bytes[2]===0x05||bytes[2]===0x07);return false;}
 function formatResumeSize(bytes){return bytes<1024*1024?Math.max(1,Math.round(bytes/1024))+' KB':(bytes/1024/1024).toFixed(1)+' MB';}
-function renderResumeLibrary(rows){const list=$('resumeLibraryList');if(!list)return;list.innerHTML='';if(!rows?.length){const empty=document.createElement('p');empty.className='resume-empty';empty.textContent='No resumes uploaded yet. Choose a PDF, DOC or DOCX file above to add your first resume.';list.appendChild(empty);return;}rows.forEach(resume=>{const card=document.createElement('article');card.className='resume-file-card';const details=document.createElement('div');details.className='resume-file-details';const name=document.createElement('strong');name.className='resume-file-name';name.textContent=resume.file_name;const meta=document.createElement('small');meta.textContent=resume.file_type.toUpperCase()+' · '+formatResumeSize(Number(resume.file_size))+' · Uploaded '+new Date(resume.created_at).toLocaleDateString();details.append(name,meta);if(resume.is_default){const tag=document.createElement('span');tag.className='resume-default-tag';tag.textContent='Default resume';details.appendChild(tag);}const actions=document.createElement('div');actions.className='resume-file-actions';const addAction=(label,action,cls='secondary-btn')=>{const button=document.createElement('button');button.type='button';button.className=cls;button.textContent=label;button.dataset.resumeAction=action;button.dataset.resumeId=resume.id;actions.appendChild(button);};addAction('Download','download');if(!resume.is_default)addAction('Set as default','default');addAction('Delete','delete','danger-btn');card.append(details,actions);list.appendChild(card);});}
+function renderResumeLibrary(rows){const list=$('resumeLibraryList');if(!list)return;list.innerHTML='';if(!rows?.length){const empty=document.createElement('p');empty.className='resume-empty';empty.textContent='No resumes uploaded yet. Choose a PDF, DOC or DOCX file above to add your first resume.';list.appendChild(empty);return;}rows.forEach(resume=>{const card=document.createElement('article');card.className='resume-file-card';const details=document.createElement('div');details.className='resume-file-details';const name=document.createElement('strong');name.className='resume-file-name';name.textContent=resume.file_name;const meta=document.createElement('small');meta.textContent=resume.file_type.toUpperCase()+' · '+formatResumeSize(Number(resume.file_size))+' · Uploaded '+new Date(resume.created_at).toLocaleDateString();details.append(name,meta);if(resume.is_default){const tag=document.createElement('span');tag.className='resume-default-tag';tag.textContent='Default resume';details.appendChild(tag);}const actions=document.createElement('div');actions.className='resume-file-actions';const addAction=(label,action,cls='secondary-btn')=>{const button=document.createElement('button');button.type='button';button.className=cls;button.textContent=label;button.dataset.resumeAction=action;button.dataset.resumeId=resume.id;actions.appendChild(button);};addAction('Import into CV Manager','import','secondary-btn');addAction('Download','download');if(!resume.is_default)addAction('Set as default','default');addAction('Delete','delete','danger-btn');card.append(details,actions);list.appendChild(card);});}
 async function loadResumeLibrary(){if(!currentUser)return;say('resumeLibraryMessage','Loading your private resume library…');const {data,error}=await client.from('candidate_resumes').select('id,file_name,file_type,file_size,is_default,created_at').eq('user_id',currentUser.id).order('is_default',{ascending:false}).order('created_at',{ascending:false});if(error){say('resumeLibraryMessage','Could not load your resume library: '+error.message);return;}renderResumeLibrary(data||[]);say('resumeLibraryMessage','Your original uploaded resumes are kept separately from your editable Caritas CV.');}
 async function uploadCandidateResume(){if(!currentUser){say('resumeLibraryMessage','Please sign in to upload a resume.');return;}const input=$('resumeUploadInput'),file=input.files?.[0];if(!file){say('resumeLibraryMessage','Choose a PDF, DOC or DOCX file first.');return;}const type=resumeFileType(file);if(!type){say('resumeLibraryMessage','Please choose a PDF, DOC or DOCX file.');return;}if(file.size<=0||file.size>RESUME_MAX_BYTES){say('resumeLibraryMessage','The file must be larger than 0 bytes and no bigger than 10 MB.');return;}say('resumeLibraryMessage','Checking file and uploading securely…');$('uploadResumeButton').disabled=true;try{if(!await resumeSignatureMatches(file,type)){say('resumeLibraryMessage','The file contents do not match its extension. Please choose a valid PDF, DOC or DOCX document.');return;}const id=crypto.randomUUID(),path=currentUser.id+'/'+id+'.'+type.ext;const {error:uploadError}=await client.storage.from(RESUME_BUCKET).upload(path,file,{contentType:type.mime,upsert:false});if(uploadError){say('resumeLibraryMessage','Upload failed: '+uploadError.message);return;}const {data:existingDefault,error:defaultError}=await client.from('candidate_resumes').select('id').eq('user_id',currentUser.id).eq('is_default',true).maybeSingle();if(defaultError){await client.storage.from(RESUME_BUCKET).remove([path]);say('resumeLibraryMessage','Could not check your default resume: '+defaultError.message);return;}const {error:insertError}=await client.from('candidate_resumes').insert({id,user_id:currentUser.id,file_name:file.name,file_type:type.ext,file_size:file.size,storage_path:path,is_default:!existingDefault});if(insertError){await client.storage.from(RESUME_BUCKET).remove([path]);say('resumeLibraryMessage','Could not save resume details: '+insertError.message);return;}input.value='';say('resumeLibraryMessage','Your original resume has been uploaded and saved privately.');await loadResumeLibrary();}catch(error){say('resumeLibraryMessage','The resume could not be uploaded. Please check your connection and try again.');console.error('Resume upload error:',error);}finally{$('uploadResumeButton').disabled=false;}}
-async function handleResumeLibraryAction(event){const button=event.target.closest('[data-resume-action]');if(!button||!currentUser)return;const id=button.dataset.resumeId,action=button.dataset.resumeAction;button.disabled=true;try{const {data:resume,error}=await client.from('candidate_resumes').select('*').eq('id',id).eq('user_id',currentUser.id).single();if(error||!resume){say('resumeLibraryMessage','Could not find that resume in your account.');return;}if(action==='download'){const {data,error:linkError}=await client.storage.from(RESUME_BUCKET).createSignedUrl(resume.storage_path,60,{download:resume.file_name});if(linkError){say('resumeLibraryMessage','Could not create a secure download link: '+linkError.message);return;}const link=document.createElement('a');link.href=data.signedUrl;link.target='_blank';link.rel='noopener';link.download=resume.file_name;document.body.appendChild(link);link.click();link.remove();say('resumeLibraryMessage','Your secure download link is ready.');}else if(action==='default'){const {error:clearError}=await client.from('candidate_resumes').update({is_default:false}).eq('user_id',currentUser.id).eq('is_default',true);if(clearError){say('resumeLibraryMessage','Could not update your default resume: '+clearError.message);return;}const {error:setError}=await client.from('candidate_resumes').update({is_default:true}).eq('id',id).eq('user_id',currentUser.id);if(setError){say('resumeLibraryMessage','Could not set this as your default resume: '+setError.message);return;}say('resumeLibraryMessage','Your default resume has been updated.');await loadResumeLibrary();}else if(action==='delete'){if(!window.confirm('Delete "'+resume.file_name+'" from your Resume Library? This cannot be undone.'))return;const {error:removeError}=await client.storage.from(RESUME_BUCKET).remove([resume.storage_path]);if(removeError){say('resumeLibraryMessage','Could not delete the stored file: '+removeError.message);return;}const {error:deleteError}=await client.from('candidate_resumes').delete().eq('id',id).eq('user_id',currentUser.id);if(deleteError){say('resumeLibraryMessage','The file was removed, but its library record could not be deleted: '+deleteError.message);return;}say('resumeLibraryMessage','Resume deleted from your library.');await loadResumeLibrary();}}catch(error){say('resumeLibraryMessage','That resume action could not be completed. Please try again.');console.error('Resume library action error:',error);}finally{if(button.isConnected)button.disabled=false;}}
+
+function loadResumeParserScript(src,globalName){
+ return new Promise((resolve,reject)=>{
+  if(window[globalName]){resolve();return;}
+  const existing=[...document.scripts].find(s=>s.src===src);
+  if(existing){existing.addEventListener('load',()=>resolve(),{once:true});existing.addEventListener('error',reject,{once:true});return;}
+  const script=document.createElement('script');script.src=src;script.async=true;
+  script.onload=()=>window[globalName]?resolve():reject(new Error('Parser library did not initialise.'));
+  script.onerror=()=>reject(new Error('Could not load the resume-reading library. Check your internet connection.'));
+  document.head.appendChild(script);
+ });
+}
+function cleanExtractedLines(text){
+ return String(text||'').replace(/\u0000/g,' ').replace(/\r/g,'\n').split('\n').map(x=>x.replace(/[•▪●◦]/g,'').trim()).filter(x=>x&&x.length<1200);
+}
+function sectionLines(lines,headingPatterns){
+ const result={};let active='other';
+ for(const line of lines){
+  const normalized=line.toLowerCase().replace(/[:：]/g,'').trim();
+  let found=Object.entries(headingPatterns).find(([,patterns])=>patterns.some(p=>normalized===p||normalized.startsWith(p+' ')));
+  if(found){active=found[0];if(!result[active])result[active]=[];continue;}
+  (result[active]||(result[active]=[])).push(line);
+ }
+ return result;
+}
+function guessResumeFields(rawText){
+ const lines=cleanExtractedLines(rawText),joined=lines.join('\n');
+ const email=joined.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||'';
+ const phone=joined.match(/(?:\+?92|0)\s?\d{2,4}[\s-]?\d{3,4}[\s-]?\d{3,4}/)?.[0]||'';
+ const cnic=joined.match(/\b\d{5}-\d{7}-\d\b/)?.[0]||'';
+ const url=joined.match(/(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/[^\s,]+|[a-z0-9-]+\.(?:com|pk|org)(?:\/[^\s,]*)?)/i)?.[0]||'';
+ const headings={
+  education:['education','academic qualification','academic qualifications','qualification','qualifications','educational background'],
+  experience:['work experience','professional experience','employment history','experience','career history'],
+  skills:['skills','key skills','core competencies','technical skills','competencies'],
+  languages:['languages','language'],
+  certifications:['certifications','certificates','training','courses','professional development'],
+  references_text:['references','referees']
+ };
+ const sections=sectionLines(lines,headings);
+ const personalStop=/^(resume|curriculum vitae|cv)$/i;
+ const nameCandidate=lines.slice(0,6).find(x=>x.split(/\s+/).length>=2&&x.split(/\s+/).length<=5&&!/@|\d{3}/.test(x)&&!personalStop.test(x)&&!/^(profile|objective|summary|contact|personal details)/i.test(x))||'';
+ const summary=sections.other?.filter(x=>x.length>45).slice(0,4).join(' ')||'';
+ const list=(key)=> (sections[key]||[]).filter(x=>x.length>2&&!/^(email|phone|mobile|address|location)\s*:/i.test(x)).slice(0,12);
+ return {cvName:nameCandidate,cvEmail:email,cvPhone:phone,cvCnic:cnic,cvWebsite:url?(/^https?:\/\//i.test(url)?url:'https://'+url):'',cvSummary:summary,
+  educationEntries:list('education'),experienceEntries:list('experience'),skillsEntries:list('skills'),languageEntries:list('languages'),trainingEntries:list('certifications'),referenceEntries:list('references_text')};
+}
+async function extractResumeText(file,resume){
+ if(resume.file_type==='doc')throw new Error('This is an older Word (.doc) file. It is safely stored, but automatic text extraction currently supports PDF and DOCX. Please open it in Word and save a copy as .docx, then upload that copy.');
+ const {data,error}=await client.storage.from(RESUME_BUCKET).createSignedUrl(resume.storage_path,120);
+ if(error)throw new Error('Could not access the original resume securely: '+error.message);
+ const response=await fetch(data.signedUrl);if(!response.ok)throw new Error('Could not download the resume for reading. Please try again.');
+ const buffer=await response.arrayBuffer();
+ if(resume.file_type==='pdf'){
+  await loadResumeParserScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+  const pages=[];
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent();pages.push(content.items.map(item=>item.str).join(' '));}
+  return pages.join('\n');
+ }
+ if(resume.file_type==='docx'){
+  await loadResumeParserScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js','mammoth');
+  const result=await window.mammoth.extractRawText({arrayBuffer:buffer});
+  return result.value||'';
+ }
+ throw new Error('This file type cannot currently be imported into the CV Manager.');
+}
+async function importResumeToCv(resume){
+ const button=document.querySelector('[data-resume-action="import"][data-resume-id="'+resume.id+'"]');
+ if(button)button.disabled=true;
+ say('resumeLibraryMessage','Reading your resume privately in this browser…');
+ try{
+  const text=await extractResumeText(null,resume);
+  if(!text.trim())throw new Error('No selectable text was found. If this is a scanned image PDF, please use a text-based PDF or enter the details manually.');
+  const fields=guessResumeFields(text);
+  const controls=['cvName','cvEmail','cvPhone','cvCnic','cvCity','cvAddress','cvWebsite','cvSummary'];
+  const existing=controls.some(id=>$(id)?.value.trim())||Object.keys(repeatConfig).some(id=>repeatValues(id).length);
+  if(existing&&!window.confirm('Importing will replace the current entries in your CV form with information detected in this resume. Your saved CV and original uploaded file will not be changed until you review and click Save profile & CV. Continue?')){say('resumeLibraryMessage','Import cancelled. Your CV has not been changed.');return;}
+  Object.entries({cvName:'cvName',cvEmail:'cvEmail',cvPhone:'cvPhone',cvCnic:'cvCnic',cvWebsite:'cvWebsite',cvSummary:'cvSummary'}).forEach(([id,key])=>{if(fields[key])$(id).value=fields[key];});
+  if(fields.cvName&&!$('cvName').value.trim())$('cvName').value=fields.cvName;
+  if(fields.cvEmail)$('cvEmail').value=fields.cvEmail;
+  if(fields.cvPhone)$('cvPhone').value=fields.cvPhone;
+  if(fields.cvCnic)$('cvCnic').value=fields.cvCnic;
+  if(fields.cvWebsite)$('cvWebsite').value=fields.cvWebsite;
+  if(fields.cvSummary)$('cvSummary').value=fields.cvSummary;
+  const map={educationEntries:'educationEntries',experienceEntries:'experienceEntries',skillsEntries:'skillsEntries',languageEntries:'languageEntries',trainingEntries:'trainingEntries',referenceEntries:'referenceEntries'};
+  Object.entries(map).forEach(([id,key])=>{if(fields[key]?.length)renderRepeater(id,fields[key]);});
+  updateProfileProgress();renderCvPreview();
+  document.getElementById('personalSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+  const found=Object.values(fields).filter(v=>Array.isArray(v)?v.length>0:!!v).length;
+  say('resumeLibraryMessage','Resume text extracted. '+found+' types of details were detected. Please review every field, correct anything inaccurate, add missing information, then click Save profile & CV. Your original file remains unchanged.');
+  say('cvMessage','Imported details are ready for your review. Nothing has been saved yet.');
+ }catch(error){say('resumeLibraryMessage',error.message||'Could not extract this resume. You can still keep and download the original file.');}
+ finally{if(button?.isConnected)button.disabled=false;}
+}
+
+async function handleResumeLibraryAction(event){const button=event.target.closest('[data-resume-action]');if(!button||!currentUser)return;const id=button.dataset.resumeId,action=button.dataset.resumeAction;button.disabled=true;try{const {data:resume,error}=await client.from('candidate_resumes').select('*').eq('id',id).eq('user_id',currentUser.id).single();if(error||!resume){say('resumeLibraryMessage','Could not find that resume in your account.');return;}if(action==='import'){await importResumeToCv(resume);}else if(action==='download'){const {data,error:linkError}=await client.storage.from(RESUME_BUCKET).createSignedUrl(resume.storage_path,60,{download:resume.file_name});if(linkError){say('resumeLibraryMessage','Could not create a secure download link: '+linkError.message);return;}const link=document.createElement('a');link.href=data.signedUrl;link.target='_blank';link.rel='noopener';link.download=resume.file_name;document.body.appendChild(link);link.click();link.remove();say('resumeLibraryMessage','Your secure download link is ready.');}else if(action==='default'){const {error:clearError}=await client.from('candidate_resumes').update({is_default:false}).eq('user_id',currentUser.id).eq('is_default',true);if(clearError){say('resumeLibraryMessage','Could not update your default resume: '+clearError.message);return;}const {error:setError}=await client.from('candidate_resumes').update({is_default:true}).eq('id',id).eq('user_id',currentUser.id);if(setError){say('resumeLibraryMessage','Could not set this as your default resume: '+setError.message);return;}say('resumeLibraryMessage','Your default resume has been updated.');await loadResumeLibrary();}else if(action==='delete'){if(!window.confirm('Delete "'+resume.file_name+'" from your Resume Library? This cannot be undone.'))return;const {error:removeError}=await client.storage.from(RESUME_BUCKET).remove([resume.storage_path]);if(removeError){say('resumeLibraryMessage','Could not delete the stored file: '+removeError.message);return;}const {error:deleteError}=await client.from('candidate_resumes').delete().eq('id',id).eq('user_id',currentUser.id);if(deleteError){say('resumeLibraryMessage','The file was removed, but its library record could not be deleted: '+deleteError.message);return;}say('resumeLibraryMessage','Resume deleted from your library.');await loadResumeLibrary();}}catch(error){say('resumeLibraryMessage','That resume action could not be completed. Please try again.');console.error('Resume library action error:',error);}finally{if(button.isConnected)button.disabled=false;}}
 
 function toggleMenu(){document.getElementById('mainNav')?.classList.toggle('open');}
 document.addEventListener('DOMContentLoaded',initCandidate);
