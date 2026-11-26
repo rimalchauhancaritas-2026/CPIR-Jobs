@@ -12,6 +12,34 @@
 .admin-tab-panel>.info-card,.admin-tab-panel>.admin-form,.admin-tab-panel>.section{margin:0 auto 1.25rem;max-width:900px}
 .admin-tab-panel [id="allJobsSection"]{padding-top:8px}
 @media(max-width:700px){.admin-tabs{gap:4px;padding:8px;margin:10px auto 14px;border-radius:10px}.admin-tab{padding:9px 11px;font-size:12px}.admin-tab-panel>.info-card,.admin-tab-panel>.admin-form{padding:1rem!important}}
+
+/* Sub-admin role management: balanced, responsive form and account cards */
+#subAdminCreateForm .form-grid>fieldset,
+#assignExistingCandidateForm .form-grid>fieldset{grid-column:1/-1;min-width:0;margin:0;background:#f8fbfd;border:1px solid #d7e4ed!important;border-radius:12px!important;padding:16px 18px!important}
+#subAdminCreateForm fieldset legend,
+#assignExistingCandidateForm fieldset legend{padding:0 7px;color:#123d61;font-weight:800;font-size:14px}
+.role-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:6px 0 12px}
+.role-choice,.subadmin-role-option{display:flex;align-items:flex-start;gap:11px;margin:0!important;padding:12px 13px;border:1px solid #dce7ef;border-radius:10px;background:#fff;color:#173b59;min-width:0;cursor:pointer;transition:border-color .15s,background .15s}
+.role-choice:hover,.subadmin-role-option:hover{border-color:#83b7d3;background:#f5faff}
+.role-choice input,.subadmin-role-option input{flex:0 0 auto;width:17px;height:17px;margin:2px 0 0;accent-color:#0878c9}
+.role-choice span,.subadmin-role-option span{display:block;min-width:0}
+.role-choice strong,.subadmin-role-option strong{display:block;color:#123d61;font-size:13px;line-height:1.35}
+.role-choice small,.subadmin-role-option small{display:block;margin-top:4px;color:#62788b;font-size:12px;line-height:1.45;font-weight:400}
+#subAdminCreateForm fieldset>small,#assignExistingCandidateForm fieldset>small{display:block;color:#61788c;font-size:12px;line-height:1.5}
+#subAdminsList{display:grid;gap:12px}
+#subAdminsList .admin-row{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(300px,1.2fr);align-items:center;gap:22px;padding:18px 20px;border:1px solid #d9e5ed;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(15,55,82,.055)}
+#subAdminsList .admin-row>div:first-child strong{display:block;color:#123d61;font-size:15px;margin-bottom:5px}
+#subAdminsList .admin-row>div:first-child span{overflow-wrap:anywhere}
+#subAdminsList .admin-row .admin-actions{display:block!important;min-width:0!important}
+.subadmin-role-checkboxes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;margin-bottom:12px}
+.subadmin-role-option{padding:9px 10px;align-items:center}
+.subadmin-role-option strong{font-size:12px}
+#subAdminsList .admin-actions button{margin:3px 7px 0 0}
+@media(max-width:700px){
+ .role-choice-grid{grid-template-columns:1fr}
+ #subAdminsList .admin-row{grid-template-columns:1fr;gap:14px;padding:15px}
+ .subadmin-role-checkboxes{grid-template-columns:1fr}
+}
 </style></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="index.html" aria-label="Caritas Youth Jobs Portal home"><img class="caritas-logo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Caritas Pakistan Islamabad-Rawalpindi"></a><nav><a href="index.html">View Portal</a></nav></div></header><main class="admin-page"><div class="container"><div class="section-heading"><div><p class="eyebrow">VERSION 1.2</p><h1>Job Administration</h1></div><button id="signOutBtn" class="secondary-btn hidden">Sign out</button></div><div id="setupWarning" class="admin-warning hidden"></div><section id="loginPanel" class="info-card auth-panel"><h2>Administrator sign in</h2><p>Only accounts explicitly authorized in the database can manage listings.</p><form id="loginForm" class="admin-form"><label>Email address<input id="email" type="email" required autocomplete="username"></label><label>Password<input id="password" type="password" required autocomplete="current-password"></label><button class="primary-btn" type="submit">Sign in</button><p id="loginMessage" role="status"></p><button type="button" class="text-btn" id="adminResetPassword">Forgot password?</button></form><p><small>For security, administrator accounts are created through Supabase Authentication. There is no public sign-up form.</small></p></section><section id="adminRecoveryPanel" class="info-card hidden"><h2>Set a new administrator password</h2><form id="adminRecoveryForm" class="admin-form"><label>New password (at least 8 characters)<input id="adminNewPassword" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary-btn" type="submit">Save new password</button><p id="adminRecoveryMessage" role="status"></p></form></section><section id="subAdminPasswordPanel" class="info-card auth-panel hidden"><h2>Set your new administrator password</h2><p>Your Main Admin provided a temporary password. Choose a new password before continuing to the dashboard.</p><form id="subAdminPasswordForm" class="admin-form"><label>New password (at least 12 characters)<input id="subAdminNewPassword" type="password" minlength="12" required autocomplete="new-password"></label><label>Confirm new password<input id="subAdminConfirmPassword" type="password" minlength="12" required autocomplete="new-password"></label><button class="primary-btn" type="submit" id="saveSubAdminPasswordBtn">Save new password</button><p id="subAdminPasswordMessage" role="status"></p></form></section><section id="adminPanel" class="admin-panel hidden"><div class="admin-warning">New jobs are saved as <strong>draft</strong> by default. Publish only after checking the employer, source, deadline and application link.</div><nav class="admin-tabs" aria-label="Admin sections" role="tablist">
 <button type="button" class="admin-tab active" role="tab" aria-selected="true" data-admin-tab="home">Home</button>
 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="jobs">All Jobs</button>
