@@ -694,3 +694,67 @@ body.disclaimer-open{overflow:hidden}
 .resume-file-actions .danger-btn{border:1px solid #f0c9c5;background:#fff;color:#b42318;border-radius:9px;font-weight:800;cursor:pointer}
 .resume-empty,.resume-privacy-note{font-size:12px;color:#718398}
 @media(max-width:650px){.resume-file-card{align-items:flex-start;flex-direction:column}.resume-file-actions{width:100%}.resume-upload-panel{align-items:flex-start}.resume-file-label,.resume-upload-panel>.primary-btn{width:auto;min-width:135px}}
+
+
+/* Resume Library: identical, compact controls for selecting and uploading */
+#resumeLibrary .resume-upload-panel .resume-file-label,
+#resumeLibrary .resume-upload-panel #uploadResumeButton{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:168px;
+  min-width:168px;
+  min-height:40px;
+  margin:0;
+  padding:9px 12px;
+  border:1px solid #cfdde9;
+  border-radius:8px;
+  background:#fff;
+  color:#17365d;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  box-shadow:none;
+  cursor:pointer;
+  flex:0 0 168px;
+  transition:background .18s,border-color .18s;
+}
+#resumeLibrary .resume-upload-panel .resume-file-label:hover,
+#resumeLibrary .resume-upload-panel #uploadResumeButton:hover{
+  background:#edf4fa;
+  border-color:#aebfd0;
+  color:#17365d;
+}
+#resumeLibrary .resume-upload-panel .resume-file-label:focus-within,
+#resumeLibrary .resume-upload-panel #uploadResumeButton:focus-visible{
+  outline:2px solid #0878c9;
+  outline-offset:2px;
+}
+#resumeLibrary .resume-upload-panel .resume-file-label input[type="file"]{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  min-height:0!important;
+  margin:-1px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+  opacity:0!important;
+}
+#resumeLibrary .resume-upload-panel #uploadResumeButton:disabled{
+  opacity:.6;
+  cursor:wait;
+}
+@media(max-width:650px){
+  #resumeLibrary .resume-upload-panel .resume-file-label,
+  #resumeLibrary .resume-upload-panel #uploadResumeButton{
+    width:100%;
+    min-width:0;
+    flex:1 1 100%;
+  }
+}
