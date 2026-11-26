@@ -129,9 +129,10 @@ async function checkSession(){
   if(account.must_change_password){
    $("loginPanel").classList.add("hidden");$("subAdminPasswordPanel").classList.remove("hidden");stopAdminIdleTimer();return;
   }
-  const {data:role,error:roleError}=await client.from("portal_admin_roles").select("permissions").eq("id",account.role_id).maybeSingle();
-  if(roleError||!role){msg("loginMessage","Your administrator role could not be loaded. Contact the Main Admin.");await client.auth.signOut();return;}
-  currentAdminPermissions=role.permissions||{};
+  const assignedRoleIds=account.role_ids?.length?account.role_ids:[account.role_id];
+  const {data:roles,error:roleError}=await client.from("portal_admin_roles").select("permissions").in("id",assignedRoleIds);
+  if(roleError||!roles||roles.length!==assignedRoleIds.length){msg("loginMessage","One or more assigned administrator roles could not be loaded. Contact the Main Admin.");await client.auth.signOut();return;}
+  currentAdminPermissions=roles.reduce((combined,role)=>({...combined,...(role.permissions||{})}),{});
  }else{
   currentAdminPermissions={"*":true};
  }
@@ -665,6 +666,14 @@ $('reviewFetchedSelected')?.addEventListener('click',async()=>{
 // Stage 2: Main Admin-only sub-admin management. New accounts remain inactive
 // until Stage 3 permission enforcement is deployed.
 let subAdminRoles=[];
+function renderRoleCheckboxes(containerId,selectedIds=[],groupName='admin-role'){
+ const container=$(containerId);if(!container)return;
+ const selected=new Set(selectedIds||[]);
+ container.innerHTML=subAdminRoles.map(r=>'<label class="role-checkbox" style="display:flex;align-items:flex-start;gap:.55rem;margin:.45rem 0;font-weight:normal"><input type="checkbox" name="'+esc(groupName)+'" value="'+esc(r.id)+'" '+(selected.has(r.id)?'checked':'')+' style="margin-top:.25rem"><span><strong>'+esc(r.label)+'</strong><small style="display:block">'+esc(r.description||'')+'</small></span></label>').join('');
+}
+function selectedRoleIds(containerId){
+ return [...($(containerId)?.querySelectorAll('input[type="checkbox"]:checked')||[])].map(input=>input.value);
+}
 async function callSubAdminManager(payload){
  const {data,error}=await client.functions.invoke('admin-account-manager',{body:payload});
  if(error)throw new Error(data?.error||error.message||'Sub-admin operation failed.');
@@ -680,17 +689,18 @@ async function loadSubAdmins(){
  ]);
  if(accountError||roleError){$('subAdminsList').innerHTML='<p class="error-text">'+esc(accountError?.message||roleError?.message)+'</p>';return;}
  subAdminRoles=roles||[];
- $('subAdminRole').innerHTML=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.label)+'</option>').join('');
- if($('existingCandidateRole'))$('existingCandidateRole').innerHTML=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.label)+'</option>').join('');
+ renderRoleCheckboxes('subAdminRoleChoices',[],'new-subadmin-role');
+ renderRoleCheckboxes('existingCandidateRoleChoices',[],'existing-candidate-role');
  const rows=(accounts||[]).filter(a=>a.role_id!=='super_admin');
  if(!rows.length){$('subAdminsList').innerHTML='<p>No sub-admin accounts have been created yet.</p>';return;}
  $('subAdminsList').innerHTML=rows.map(a=>{
-  const roleOptions=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'" '+(r.id===a.role_id?'selected':'')+'>'+esc(r.label)+'</option>').join('');
-  return '<div class="admin-row" data-subadmin-id="'+esc(a.user_id)+'"><div><strong>'+esc(a.display_name||'Sub-Admin')+'</strong><span>'+esc(a.email||'')+'</span><span>Created: '+(a.created_at?new Date(a.created_at).toLocaleDateString():'—')+' · '+(a.is_active?(a.must_change_password?'Active · password change required':'Active'):'Inactive')+'</span></div><div class="admin-actions"><select class="subadmin-role-select" aria-label="Role for '+esc(a.display_name)+'">'+roleOptions+'</select><button type="button" class="secondary-btn subadmin-save-role">Save role</button>'+(a.is_active?'<button type="button" class="danger-btn subadmin-deactivate">Deactivate</button>':'<button type="button" class="secondary-btn subadmin-activate">Activate</button>')+'</div></div>';
+  const selected=a.role_ids?.length?a.role_ids:[a.role_id];
+  const roleChecks=subAdminRoles.map(r=>'<label class="role-checkbox" style="display:flex;align-items:flex-start;gap:.45rem;margin:.35rem 0;font-weight:normal"><input class="subadmin-role-checkbox" type="checkbox" value="'+esc(r.id)+'" '+(selected.includes(r.id)?'checked':'')+' style="margin-top:.2rem"><span>'+esc(r.label)+'</span></label>').join('');
+  return '<div class="admin-row" data-subadmin-id="'+esc(a.user_id)+'"><div><strong>'+esc(a.display_name||'Sub-Admin')+'</strong><span>'+esc(a.email||'')+'</span><span>Created: '+(a.created_at?new Date(a.created_at).toLocaleDateString():'—')+' · '+(a.is_active?(a.must_change_password?'Active · password change required':'Active'):'Inactive')+'</span></div><div class="admin-actions" style="display:block;min-width:220px"><div class="subadmin-role-checkboxes">'+roleChecks+'</div><button type="button" class="secondary-btn subadmin-save-role">Save roles</button>'+(a.is_active?'<button type="button" class="danger-btn subadmin-deactivate">Deactivate</button>':'<button type="button" class="secondary-btn subadmin-activate">Activate</button>')+'</div></div>';
  }).join('');
  $('subAdminsList').querySelectorAll('.subadmin-save-role').forEach(btn=>btn.addEventListener('click',async()=>{
   const row=btn.closest('[data-subadmin-id]');btn.disabled=true;
-  try{const result=await callSubAdminManager({action:'set_role',user_id:row.dataset.subadminId,role_id:row.querySelector('.subadmin-role-select').value});msg('subAdminMessage',result.message);await loadSubAdmins();}
+  try{const result=await callSubAdminManager({action:'set_roles',user_id:row.dataset.subadminId,role_ids:[...row.querySelectorAll('.subadmin-role-checkbox:checked')].map(x=>x.value)});msg('subAdminMessage',result.message);await loadSubAdmins();}
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
  $('subAdminsList').querySelectorAll('.subadmin-deactivate').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -707,7 +717,7 @@ async function loadSubAdmins(){
 $('subAdminCreateForm')?.addEventListener('submit',async e=>{
  e.preventDefault();const button=$('createSubAdminBtn');button.disabled=true;msg('subAdminMessage','Creating sub-admin account…');
  try{
-  const result=await callSubAdminManager({action:'create',display_name:val('subAdminName'),email:val('subAdminEmail'),temporary_password:$('subAdminTempPassword').value,role_id:val('subAdminRole')});
+  const result=await callSubAdminManager({action:'create',display_name:val('subAdminName'),email:val('subAdminEmail'),temporary_password:$('subAdminTempPassword').value,role_ids:selectedRoleIds('subAdminRoleChoices')});
   $('subAdminCreateForm').reset();msg('subAdminMessage',result.message);await loadSubAdmins();
  }catch(error){msg('subAdminMessage',error.message);}
  finally{button.disabled=false;}
@@ -715,7 +725,7 @@ $('subAdminCreateForm')?.addEventListener('submit',async e=>{
 $('assignExistingCandidateForm')?.addEventListener('submit',async e=>{
  e.preventDefault();const button=$('assignExistingCandidateBtn');button.disabled=true;msg('subAdminMessage','Checking candidate account and assigning role…');
  try{
-  const result=await callSubAdminManager({action:'assign_existing',email:val('existingCandidateEmail'),display_name:val('existingCandidateName'),role_id:val('existingCandidateRole')});
+  const result=await callSubAdminManager({action:'assign_existing',email:val('existingCandidateEmail'),display_name:val('existingCandidateName'),role_ids:selectedRoleIds('existingCandidateRoleChoices')});
   $('assignExistingCandidateForm').reset();msg('subAdminMessage',result.message);await loadSubAdmins();
  }catch(error){msg('subAdminMessage',error.message);}
  finally{button.disabled=false;}
