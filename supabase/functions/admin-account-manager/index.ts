@@ -45,6 +45,64 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return reply({ error: "Invalid request body." }, 400); }
   const action = String(body.action ?? "");
 
+  if (action === "assign_existing") {
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const displayNameInput = String(body.display_name ?? "").trim();
+    const roleId = String(body.role_id ?? "");
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ error: "Enter the candidate's registered email address." }, 400);
+    if (displayNameInput.length > 120) return reply({ error: "Name must be 120 characters or fewer." }, 400);
+    if (!roleId || roleId === "super_admin") return reply({ error: "Choose a permitted sub-admin role." }, 400);
+
+    const { data: role, error: roleError } = await adminClient
+      .from("portal_admin_roles").select("id").eq("id", roleId).maybeSingle();
+    if (roleError || !role) return reply({ error: "The selected role is not available." }, 400);
+
+    // Find the existing Auth identity by exact email without creating a duplicate user.
+    let existingUser: any = null;
+    for (let page = 1; page <= 100; page++) {
+      const { data: usersPage, error: usersError } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+      if (usersError) return reply({ error: "Could not verify the existing account: " + usersError.message }, 500);
+      const users = usersPage?.users ?? [];
+      existingUser = users.find((u: any) => String(u.email ?? "").toLowerCase() === email) ?? null;
+      if (existingUser || users.length < 1000) break;
+    }
+    if (!existingUser) return reply({ error: "No Supabase account was found for that email. Use Create Sub-Admin for a new staff account." }, 404);
+    if (existingUser.id === actor.id) return reply({ error: "Your Main Admin account cannot be assigned a sub-admin role." }, 400);
+
+    const { data: candidate, error: candidateError } = await adminClient
+      .from("profiles").select("user_id,full_name,email").eq("user_id", existingUser.id).maybeSingle();
+    if (candidateError) return reply({ error: "Could not verify the candidate profile: " + candidateError.message }, 500);
+    if (!candidate) return reply({ error: "This email belongs to an Auth user without a candidate profile. Use Create Sub-Admin if this is a new staff account." }, 404);
+
+    const { data: alreadyAdmin, error: adminLookupError } = await adminClient
+      .from("portal_admin_accounts").select("user_id,role_id").eq("user_id", existingUser.id).maybeSingle();
+    if (adminLookupError) return reply({ error: "Could not check administrator status: " + adminLookupError.message }, 500);
+    if (alreadyAdmin) return reply({ error: "This account already has administrator access. Change its role in the administrator accounts list instead." }, 409);
+
+    const displayName = displayNameInput || candidate.full_name || existingUser.user_metadata?.full_name || "Sub-Admin";
+    const { error: insertError } = await adminClient.from("portal_admin_accounts").insert({
+      user_id: existingUser.id,
+      email,
+      display_name: displayName,
+      role_id: roleId,
+      is_active: false,
+      must_change_password: true,
+      created_by: actor.id,
+    });
+    if (insertError) return reply({ error: "Could not assign the sub-admin role: " + insertError.message }, 500);
+
+    await adminClient.from("portal_admin_activity").insert({
+      actor_user_id: actor.id, target_user_id: existingUser.id,
+      action: "existing_candidate_assigned_subadmin",
+      details: { email, role_id: roleId, initial_status: "inactive_pending_activation" },
+    });
+    return reply({
+      ok: true,
+      message: "Existing candidate account assigned as an inactive sub-admin. Their candidate profile and CV remain intact. After you activate the account, they can sign in with their existing password and will be asked to change it before entering the Admin Portal.",
+    });
+  }
+
   if (action === "create") {
     const email = String(body.email ?? "").trim().toLowerCase();
     const displayName = String(body.display_name ?? "").trim();
@@ -144,7 +202,7 @@ Deno.serve(async (req) => {
       actor_user_id: actor.id, target_user_id: targetId,
       action: "subadmin_activated", details: {},
     });
-    return reply({ ok: true, message: "Sub-admin activated. They must still change their temporary password before accessing the dashboard." });
+    return reply({ ok: true, message: "Sub-admin activated. They must change their password before accessing the dashboard." });
   }
 
   return reply({ error: "Unsupported action." }, 400);

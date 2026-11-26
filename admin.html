@@ -51,7 +51,19 @@
 <p id="subAdminMessage" role="status"></p>
 </form>
 <hr>
+<h3>Assign an existing candidate as Sub-Admin</h3>
+<p>If a staff member has already registered as a candidate, you can grant them administrator access without creating a second Supabase login. Their candidate profile and CV are preserved.</p>
+<form id="assignExistingCandidateForm" class="admin-form">
+<div class="form-grid">
+<label>Candidate's registered email<input id="existingCandidateEmail" type="email" maxlength="254" autocomplete="off" required></label>
+<label>Display name (optional)<input id="existingCandidateName" maxlength="120" placeholder="Use the candidate profile name if blank"></label>
+<label>Sub-Admin role<select id="existingCandidateRole" required></select></label>
+</div>
+<div class="source-notice">For safety, this assignment is initially inactive. After activation, the candidate signs in with their existing password and must change it before accessing the Admin Portal. Changing the password also changes it for their candidate login because both use the same account.</div>
+<div class="admin-actions"><button type="submit" class="primary-btn" id="assignExistingCandidateBtn">Assign Existing Candidate</button></div>
+</form>
+<hr>
 <h3>Administrator accounts</h3>
 <div id="subAdminsList"><p>Loading administrator accounts…</p></div>
-</section></div></section></div></main><div id="adminCropModal" class="crop-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminCropTitle"><div class="crop-dialog"><h2 id="adminCropTitle">Position administrator photograph</h2><p>Drag the image and adjust the crop freely to place the face exactly where you want it.</p><div class="crop-image-wrap"><img id="adminCropImage" alt="Administrator photograph to crop"></div><div class="crop-controls"><button type="button" class="secondary-btn" id="adminZoomOut">− Zoom out</button><button type="button" class="secondary-btn" id="adminZoomIn">+ Zoom in</button><button type="button" class="secondary-btn" id="adminCancelCrop">Cancel</button><button type="button" class="primary-btn" id="adminApplyCrop">Use this photo</button></div></div></div><footer><div class="copyright">© 2026 Caritas Youth Jobs Portal — Version 1.2</div></footer><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js'"></script><script src="admin.js?v=20261125-stage3"></script><script src="branding.js" defer></script>
+</section></div></section></div></main><div id="adminCropModal" class="crop-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminCropTitle"><div class="crop-dialog"><h2 id="adminCropTitle">Position administrator photograph</h2><p>Drag the image and adjust the crop freely to place the face exactly where you want it.</p><div class="crop-image-wrap"><img id="adminCropImage" alt="Administrator photograph to crop"></div><div class="crop-controls"><button type="button" class="secondary-btn" id="adminZoomOut">− Zoom out</button><button type="button" class="secondary-btn" id="adminZoomIn">+ Zoom in</button><button type="button" class="secondary-btn" id="adminCancelCrop">Cancel</button><button type="button" class="primary-btn" id="adminApplyCrop">Use this photo</button></div></div></div><footer><div class="copyright">© 2026 Caritas Youth Jobs Portal — Version 1.2</div></footer><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js'"></script><script src="admin.js?v=20261126-existing-candidate"></script><script src="branding.js" defer></script>
 </body></html>

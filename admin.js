@@ -681,6 +681,7 @@ async function loadSubAdmins(){
  if(accountError||roleError){$('subAdminsList').innerHTML='<p class="error-text">'+esc(accountError?.message||roleError?.message)+'</p>';return;}
  subAdminRoles=roles||[];
  $('subAdminRole').innerHTML=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.label)+'</option>').join('');
+ if($('existingCandidateRole'))$('existingCandidateRole').innerHTML=subAdminRoles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.label)+'</option>').join('');
  const rows=(accounts||[]).filter(a=>a.role_id!=='super_admin');
  if(!rows.length){$('subAdminsList').innerHTML='<p>No sub-admin accounts have been created yet.</p>';return;}
  $('subAdminsList').innerHTML=rows.map(a=>{
@@ -698,7 +699,7 @@ async function loadSubAdmins(){
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
  $('subAdminsList').querySelectorAll('.subadmin-activate').forEach(btn=>btn.addEventListener('click',async()=>{
-  const row=btn.closest('[data-subadmin-id]');if(!confirm('Activate '+row.querySelector('strong').textContent+'? They will still need to change their temporary password.'))return;btn.disabled=true;
+  const row=btn.closest('[data-subadmin-id]');if(!confirm('Activate '+row.querySelector('strong').textContent+'? They will need to change their password before accessing the Admin Portal.'))return;btn.disabled=true;
   try{const result=await callSubAdminManager({action:'activate',user_id:row.dataset.subadminId});msg('subAdminMessage',result.message);await loadSubAdmins();}
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
@@ -708,6 +709,14 @@ $('subAdminCreateForm')?.addEventListener('submit',async e=>{
  try{
   const result=await callSubAdminManager({action:'create',display_name:val('subAdminName'),email:val('subAdminEmail'),temporary_password:$('subAdminTempPassword').value,role_id:val('subAdminRole')});
   $('subAdminCreateForm').reset();msg('subAdminMessage',result.message);await loadSubAdmins();
+ }catch(error){msg('subAdminMessage',error.message);}
+ finally{button.disabled=false;}
+});
+$('assignExistingCandidateForm')?.addEventListener('submit',async e=>{
+ e.preventDefault();const button=$('assignExistingCandidateBtn');button.disabled=true;msg('subAdminMessage','Checking candidate account and assigning role…');
+ try{
+  const result=await callSubAdminManager({action:'assign_existing',email:val('existingCandidateEmail'),display_name:val('existingCandidateName'),role_id:val('existingCandidateRole')});
+  $('assignExistingCandidateForm').reset();msg('subAdminMessage',result.message);await loadSubAdmins();
  }catch(error){msg('subAdminMessage',error.message);}
  finally{button.disabled=false;}
 });
