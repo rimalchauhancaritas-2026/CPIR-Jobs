@@ -231,7 +231,6 @@ function groupExperienceEntries(lines){
  const isJobHeading=line=>{
   if(line.length>220)return false;
   if(!line.includes('|'))return false;
-  if(/(?:managing|dealing with|assisting|communicating|responsible for|supporting|processing|coordinating|handling)\b/i.test(line))return false;
   return line.split('|').filter(part=>part.trim()).length>=2;
  };
  const groups=[];let current=[];
