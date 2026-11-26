@@ -336,6 +336,8 @@ async function importResumeToCv(resume){
   const map={educationEntries:'educationEntries',experienceEntries:'experienceEntries',skillsEntries:'skillsEntries',languageEntries:'languageEntries',trainingEntries:'trainingEntries',referenceEntries:'referenceEntries'};
   Object.entries(map).forEach(([id,key])=>{if(fields[key]?.length)renderRepeater(id,fields[key]);});
   refreshCvPreviewFromForm();
+  // Reveal the CV Manager before scrolling to its imported fields.
+  showCvWorkflow('build');
   document.getElementById('personalSection')?.scrollIntoView({behavior:'smooth',block:'start'});
   const found=Object.values(fields).filter(v=>Array.isArray(v)?v.length>0:!!v).length;
   say('resumeLibraryMessage','Resume text extracted. '+found+' types of details were detected. Please review every field, correct anything inaccurate, add missing information, then click Save profile & CV. Your original file remains unchanged.');
