@@ -222,6 +222,34 @@ function sectionLines(lines,headingPatterns){
  }
  return result;
 }
+function groupExperienceEntries(lines){
+ const source=(lines||[]).map(line=>String(line||'').trim()).filter(Boolean);
+ if(!source.length)return [];
+ // A job heading commonly contains a role and employer separated by a vertical bar.
+ // Treat that as the start of a new job; following location/date and responsibility
+ // lines stay attached until the next job heading.
+ const isJobHeading=line=>{
+  if(line.length>220)return false;
+  if(!line.includes('|'))return false;
+  return line.split('|').filter(part=>part.trim()).length>=2;
+ };
+ const groups=[];let current=[];
+ for(const line of source){
+  if(isJobHeading(line)){
+   if(current.length)groups.push(current.join('\n'));
+   current=[line];
+  }else if(current.length){
+   current.push(line);
+  }else{
+   // Keep introductory lines with the first role rather than creating stray entries.
+   current.push(line);
+  }
+ }
+ if(current.length)groups.push(current.join('\n'));
+ // If no reliable role/employer boundaries were found, keep the whole section
+ // together as one reviewable experience instead of scattering individual lines.
+ return groups.length===1&& !source.some(isJobHeading) ? [source.join('\n')] : groups;
+}
 function guessResumeFields(rawText){
  const lines=cleanExtractedLines(rawText),joined=lines.join('\n');
  const email=joined.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||'';
@@ -242,7 +270,7 @@ function guessResumeFields(rawText){
  const summary=sections.other?.filter(x=>x.length>45).slice(0,4).join(' ')||'';
  const list=(key)=> (sections[key]||[]).filter(x=>x.length>2&&!/^(email|phone|mobile|address|location)\s*:/i.test(x)).slice(0,12);
  return {cvName:nameCandidate,cvEmail:email,cvPhone:phone,cvCnic:cnic,cvWebsite:url?(/^https?:\/\//i.test(url)?url:'https://'+url):'',cvSummary:summary,
-  educationEntries:list('education'),experienceEntries:list('experience'),skillsEntries:list('skills'),languageEntries:list('languages'),trainingEntries:list('certifications'),referenceEntries:list('references_text')};
+  educationEntries:list('education'),experienceEntries:groupExperienceEntries(sections.experience||[]),skillsEntries:list('skills'),languageEntries:list('languages'),trainingEntries:list('certifications'),referenceEntries:list('references_text')};
 }
 async function extractResumeText(file,resume){
  if(resume.file_type==='doc')throw new Error('This is an older Word (.doc) file. It is safely stored, but automatic text extraction currently supports PDF and DOCX. Please open it in Word and save a copy as .docx, then upload that copy.');
