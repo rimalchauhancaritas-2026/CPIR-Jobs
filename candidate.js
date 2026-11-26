@@ -17,6 +17,14 @@ function showCvWorkflow(view){
  const target=view==='build'?build:view==='upload'?upload:choice;
  target.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function openCvWorkflow(view){
+ if(view==='build'||view==='upload'){
+  const url=new URL(window.location.href);
+  url.hash=view==='build'?'build-cv':'upload-cv';
+  window.history.pushState({...window.history.state,cvWorkflow:view},'',url);
+ }
+ showCvWorkflow(view);
+}
 function updateProfileProgress(){const ids=['cvName','cvEmail','cvPhone','cvSummary'];const done=ids.filter(id=>$(id)?.value.trim()).length+(repeatValues('educationEntries').length?1:0)+(repeatValues('skillsEntries').length?1:0);const total=ids.length+2;const pct=Math.round(done/total*100);if($('profileProgressValue'))$('profileProgressValue').textContent=pct+'%';if($('profileProgressBar'))$('profileProgressBar').style.width=pct+'%';if($('profileProgressText'))$('profileProgressText').textContent=pct===100?'Your core CV profile is complete. You can still add optional details to strengthen it.':done+' of '+total+' required profile items completed. Complete the remaining sections to finish your CV.';}
 function initCandidate(){
  if(!window.supabase||!window.CPIR_CONFIG?.SUPABASE_URL||!window.CPIR_CONFIG?.SUPABASE_ANON_KEY){say('signupMessage','Supabase configuration is missing.');return;}
@@ -26,8 +34,9 @@ function initCandidate(){
  $('signupForm').addEventListener('submit',signup);
  $('loginForm').addEventListener('submit',login);
  $('candidateSignOut').onclick=async()=>{await client.auth.signOut();};
- $('chooseBuildCv').addEventListener('click',()=>showCvWorkflow('build'));
- $('chooseUploadCv').addEventListener('click',()=>showCvWorkflow('upload'));
+ $('chooseBuildCv').addEventListener('click',()=>openCvWorkflow('build'));
+ $('chooseUploadCv').addEventListener('click',()=>openCvWorkflow('upload'));
+ window.addEventListener('popstate',event=>{if(currentUser)showCvWorkflow(event.state?.cvWorkflow||'choice');});
  $('backFromBuildCv').addEventListener('click',()=>showCvWorkflow('choice'));
  $('backFromUploadCv').addEventListener('click',()=>showCvWorkflow('choice'));
  $('resetPassword').onclick=resetPassword;
