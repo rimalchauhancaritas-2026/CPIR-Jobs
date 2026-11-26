@@ -54,7 +54,7 @@ async function showSession(session){currentUser=session?.user||null;$('candidate
  await loadAlertPreferences();
  const {data,error}=await client.from('cv_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
  if(error){say('cvMessage','Could not load saved CV: '+error.message);return;}
- if(data){const map={cvName:'full_name',cvEmail:'email',cvPhone:'phone',cvCity:'city',cvAddress:'address',cvWebsite:'website',cvSummary:'summary'};
+ if(data){const map={cvName:'full_name',cvEmail:'email',cvPhone:'phone',cvCnic:'cnic',cvCity:'city',cvAddress:'address',cvWebsite:'website',cvSummary:'summary'};
  Object.entries(map).forEach(([id,key])=>$(id).value=data[key]||'');
  loadRepeaters(data);
  photoPath=data.photo_path||null;
@@ -147,14 +147,14 @@ async function saveCv(e){e.preventDefault();if(!currentUser)return;
  if(uploadError){say('cvMessage','Could not upload photograph: '+uploadError.message);return;}nextPhotoPath=path;
  }else if(removePhotoRequested&&photoPath){const {error:removeError}=await client.storage.from('candidate-photos').remove([photoPath]);if(removeError){say('cvMessage','Could not remove photograph: '+removeError.message);return;}nextPhotoPath=null;}
  const repeated=collectRepeaters();
- const record={user_id:currentUser.id,full_name:$('cvName').value.trim(),email:$('cvEmail').value.trim(),phone:$('cvPhone').value.trim(),city:$('cvCity').value.trim(),address:$('cvAddress').value.trim(),website:$('cvWebsite').value.trim(),summary:$('cvSummary').value.trim(),education:repeated.educationEntries,experience:repeated.experienceEntries,skills:repeated.skillsEntries,languages:repeated.languageEntries,certifications:repeated.trainingEntries,references_text:repeated.referenceEntries,photo_path:nextPhotoPath,updated_at:new Date().toISOString()}
+ const record={user_id:currentUser.id,full_name:$('cvName').value.trim(),email:$('cvEmail').value.trim(),phone:$('cvPhone').value.trim(),cnic:$('cvCnic').value.trim(),city:$('cvCity').value.trim(),address:$('cvAddress').value.trim(),website:$('cvWebsite').value.trim(),summary:$('cvSummary').value.trim(),education:repeated.educationEntries,experience:repeated.experienceEntries,skills:repeated.skillsEntries,languages:repeated.languageEntries,certifications:repeated.trainingEntries,references_text:repeated.referenceEntries,photo_path:nextPhotoPath,updated_at:new Date().toISOString()}
  const {error}=await client.from('cv_profiles').upsert(record,{onConflict:'user_id'});
  if(error){say('cvMessage','Could not save CV: '+error.message);return;}
  photoPath=nextPhotoPath;removePhotoRequested=false;
  const {error:profileError}=await client.from('profiles').upsert({user_id:currentUser.id,full_name:record.full_name,email:record.email,phone:record.phone,city:record.city,updated_at:new Date().toISOString()},{onConflict:'user_id'});
  say('cvMessage',profileError?'CV saved, but profile details could not be updated: '+profileError.message:'Your CV and photograph have been saved securely.');updateProfileProgress();
 }
-function cvHeaderHtml(esc,val){return (photoDataUrl?'<img class="cv-photo" src="'+photoDataUrl+'" alt="Profile photograph">':'')+'<h1>'+esc(val('cvName'))+'</h1><p class="contact">'+esc(val('cvEmail'))+' · '+esc(val('cvPhone'))+' · '+esc(val('cvCity'))+'<br>'+esc(val('cvAddress'))+'<br>'+esc(val('cvWebsite'))+'</p>';}
+function cvHeaderHtml(esc,val){return (photoDataUrl?'<img class="cv-photo" src="'+photoDataUrl+'" alt="Profile photograph">':'')+'<h1>'+esc(val('cvName'))+'</h1><p class="contact">'+esc(val('cvEmail'))+' · '+esc(val('cvPhone'))+' · '+esc(val('cvCity'))+(val('cvCnic')?'<br>CNIC: '+esc(val('cvCnic')):'')+'<br>'+esc(val('cvAddress'))+'<br>'+esc(val('cvWebsite'))+'</p>';}
 function cvSections(esc,val){
  const lineBreaks=value=>esc(value).replace(/\r?\n/g,'<br>');
  const profile=val('cvSummary')?'<h2>Professional Profile</h2><p>'+lineBreaks(val('cvSummary'))+'</p>':'';
