@@ -669,7 +669,8 @@ let subAdminRoles=[];
 function renderRoleCheckboxes(containerId,selectedIds=[],groupName='admin-role'){
  const container=$(containerId);if(!container)return;
  const selected=new Set(selectedIds||[]);
- container.innerHTML=subAdminRoles.map(r=>'<label class="role-checkbox" style="display:flex;align-items:flex-start;gap:.55rem;margin:.45rem 0;font-weight:normal"><input type="checkbox" name="'+esc(groupName)+'" value="'+esc(r.id)+'" '+(selected.has(r.id)?'checked':'')+' style="margin-top:.25rem"><span><strong>'+esc(r.label)+'</strong><small style="display:block">'+esc(r.description||'')+'</small></span></label>').join('');
+ container.className='role-choice-grid';
+ container.innerHTML=subAdminRoles.map(r=>'<label class="role-choice"><input type="checkbox" name="'+esc(groupName)+'" value="'+esc(r.id)+'" '+(selected.has(r.id)?'checked':'')+'><span><strong>'+esc(r.label)+'</strong><small>'+esc(r.description||'')+'</small></span></label>').join('');
 }
 function selectedRoleIds(containerId){
  return [...($(containerId)?.querySelectorAll('input[type="checkbox"]:checked')||[])].map(input=>input.value);
@@ -695,7 +696,7 @@ async function loadSubAdmins(){
  if(!rows.length){$('subAdminsList').innerHTML='<p>No sub-admin accounts have been created yet.</p>';return;}
  $('subAdminsList').innerHTML=rows.map(a=>{
   const selected=a.role_ids?.length?a.role_ids:[a.role_id];
-  const roleChecks=subAdminRoles.map(r=>'<label class="role-checkbox" style="display:flex;align-items:flex-start;gap:.45rem;margin:.35rem 0;font-weight:normal"><input class="subadmin-role-checkbox" type="checkbox" value="'+esc(r.id)+'" '+(selected.includes(r.id)?'checked':'')+' style="margin-top:.2rem"><span>'+esc(r.label)+'</span></label>').join('');
+  const roleChecks=subAdminRoles.map(r=>'<label class="subadmin-role-option"><input class="subadmin-role-checkbox" type="checkbox" value="'+esc(r.id)+'" '+(selected.includes(r.id)?'checked':'')+'><span><strong>'+esc(r.label)+'</strong><small>'+esc(r.description||'')+'</small></span></label>').join('');
   return '<div class="admin-row" data-subadmin-id="'+esc(a.user_id)+'"><div><strong>'+esc(a.display_name||'Sub-Admin')+'</strong><span>'+esc(a.email||'')+'</span><span>Created: '+(a.created_at?new Date(a.created_at).toLocaleDateString():'—')+' · '+(a.is_active?(a.must_change_password?'Active · password change required':'Active'):'Inactive')+'</span></div><div class="admin-actions" style="display:block;min-width:220px"><div class="subadmin-role-checkboxes">'+roleChecks+'</div><button type="button" class="secondary-btn subadmin-save-role">Save roles</button>'+(a.is_active?'<button type="button" class="danger-btn subadmin-deactivate">Deactivate</button>':'<button type="button" class="secondary-btn subadmin-activate">Activate</button>')+'</div></div>';
  }).join('');
  $('subAdminsList').querySelectorAll('.subadmin-save-role').forEach(btn=>btn.addEventListener('click',async()=>{
