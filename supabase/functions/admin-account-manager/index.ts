@@ -176,12 +176,11 @@ Deno.serve(async (req) => {
     const { error } = await adminClient.from("portal_admin_accounts")
       .update({ is_active: false, updated_at: new Date().toISOString() }).eq("user_id", targetId);
     if (error) return reply({ error: error.message }, 500);
-    await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: targetId,
       action: "subadmin_deactivated", details: {},
     });
-    return reply({ ok: true, message: "Sub-admin deactivated. Database permissions are blocked immediately and Auth sign-in is suspended." });
+    return reply({ ok: true, message: "Sub-admin access deactivated. Their shared Auth sign-in remains available for candidate services; Admin Portal access is blocked." });
   }
 
   if (action === "activate") {
@@ -190,14 +189,9 @@ Deno.serve(async (req) => {
     if (!target || target.role_id === "super_admin" || targetId === actor.id) {
       return reply({ error: "Sub-admin account not found." }, 404);
     }
-    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "none" });
-    if (authUpdateError) return reply({ error: "Could not restore Auth access: " + authUpdateError.message }, 500);
     const { error } = await adminClient.from("portal_admin_accounts")
       .update({ is_active: true, updated_at: new Date().toISOString() }).eq("user_id", targetId);
-    if (error) {
-      await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
-      return reply({ error: "Could not activate account: " + error.message }, 500);
-    }
+    if (error) return reply({ error: "Could not activate account: " + error.message }, 500);
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: targetId,
       action: "subadmin_activated", details: {},
