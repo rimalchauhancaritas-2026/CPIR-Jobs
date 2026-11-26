@@ -48,15 +48,15 @@ Deno.serve(async (req) => {
   if (action === "assign_existing") {
     const email = String(body.email ?? "").trim().toLowerCase();
     const displayNameInput = String(body.display_name ?? "").trim();
-    const roleId = String(body.role_id ?? "");
+    const roleIds = Array.isArray(body.role_ids) ? [...new Set(body.role_ids.map((id) => String(id)))] : [String(body.role_id ?? "")].filter(Boolean);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ error: "Enter the candidate's registered email address." }, 400);
     if (displayNameInput.length > 120) return reply({ error: "Name must be 120 characters or fewer." }, 400);
-    if (!roleId || roleId === "super_admin") return reply({ error: "Choose a permitted sub-admin role." }, 400);
+    if (!roleIds.length || roleIds.includes("super_admin")) return reply({ error: "Choose one or more permitted sub-admin roles." }, 400);
 
-    const { data: role, error: roleError } = await adminClient
-      .from("portal_admin_roles").select("id").eq("id", roleId).maybeSingle();
-    if (roleError || !role) return reply({ error: "The selected role is not available." }, 400);
+    const { data: roles, error: roleError } = await adminClient
+      .from("portal_admin_roles").select("id").in("id", roleIds);
+    if (roleError || !roles || roles.length !== roleIds.length) return reply({ error: "One or more selected roles are not available." }, 400);
 
     // Find the existing Auth identity by exact email without creating a duplicate user.
     let existingUser: any = null;
@@ -85,7 +85,8 @@ Deno.serve(async (req) => {
       user_id: existingUser.id,
       email,
       display_name: displayName,
-      role_id: roleId,
+      role_id: roleIds[0],
+      role_ids: roleIds,
       is_active: false,
       must_change_password: true,
       created_by: actor.id,
@@ -95,7 +96,7 @@ Deno.serve(async (req) => {
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: existingUser.id,
       action: "existing_candidate_assigned_subadmin",
-      details: { email, role_id: roleId, initial_status: "inactive_pending_activation" },
+      details: { email, role_ids: roleIds, initial_status: "inactive_pending_activation" },
     });
     return reply({
       ok: true,
@@ -107,16 +108,16 @@ Deno.serve(async (req) => {
     const email = String(body.email ?? "").trim().toLowerCase();
     const displayName = String(body.display_name ?? "").trim();
     const password = String(body.temporary_password ?? "");
-    const roleId = String(body.role_id ?? "");
+    const roleIds = Array.isArray(body.role_ids) ? [...new Set(body.role_ids.map((id) => String(id)))] : [String(body.role_id ?? "")].filter(Boolean);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ error: "Enter a valid email address." }, 400);
     if (!displayName || displayName.length > 120) return reply({ error: "Enter a name (maximum 120 characters)." }, 400);
     if (password.length < 12) return reply({ error: "Temporary password must be at least 12 characters." }, 400);
-    if (roleId === "super_admin" || !roleId) return reply({ error: "Choose a permitted sub-admin role." }, 400);
+    if (!roleIds.length || roleIds.includes("super_admin")) return reply({ error: "Choose one or more permitted sub-admin roles." }, 400);
 
-    const { data: role, error: roleError } = await adminClient
-      .from("portal_admin_roles").select("id").eq("id", roleId).maybeSingle();
-    if (roleError || !role) return reply({ error: "The selected role is not available." }, 400);
+    const { data: roles, error: roleError } = await adminClient
+      .from("portal_admin_roles").select("id").in("id", roleIds);
+    if (roleError || !roles || roles.length !== roleIds.length) return reply({ error: "One or more selected roles are not available." }, 400);
 
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email, password, email_confirm: true,
@@ -128,7 +129,8 @@ Deno.serve(async (req) => {
       user_id: created.user.id,
       email,
       display_name: displayName,
-      role_id: roleId,
+      role_id: roleIds[0],
+      role_ids: roleIds,
       is_active: false,
       must_change_password: true,
       created_by: actor.id,
@@ -141,7 +143,7 @@ Deno.serve(async (req) => {
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: created.user.id,
       action: "subadmin_created",
-      details: { email, role_id: roleId, initial_status: "inactive_pending_stage3" },
+      details: { email, role_ids: roleIds, initial_status: "inactive_pending_stage3" },
     });
     return reply({
       ok: true,
@@ -152,21 +154,21 @@ Deno.serve(async (req) => {
   const targetId = String(body.user_id ?? "");
   if (!targetId) return reply({ error: "Select an administrator account." }, 400);
 
-  if (action === "set_role") {
-    const roleId = String(body.role_id ?? "");
-    if (!roleId || roleId === "super_admin") return reply({ error: "A sub-admin cannot be assigned the Main Admin role." }, 400);
-    const { data: role } = await adminClient.from("portal_admin_roles").select("id").eq("id", roleId).maybeSingle();
-    if (!role) return reply({ error: "The selected role is not available." }, 400);
+  if (action === "set_roles" || action === "set_role") {
+    const roleIds = Array.isArray(body.role_ids) ? [...new Set(body.role_ids.map((id) => String(id)))] : [String(body.role_id ?? "")].filter(Boolean);
+    if (!roleIds.length || roleIds.includes("super_admin")) return reply({ error: "Select one or more permitted sub-admin roles. Main Admin cannot be assigned." }, 400);
+    const { data: roles, error: rolesError } = await adminClient.from("portal_admin_roles").select("id").in("id", roleIds);
+    if (rolesError || !roles || roles.length !== roleIds.length) return reply({ error: "One or more selected roles are not available." }, 400);
     const { data: target } = await adminClient.from("portal_admin_accounts").select("user_id,role_id").eq("user_id", targetId).maybeSingle();
     if (!target || target.role_id === "super_admin" || targetId === actor.id) return reply({ error: "That sub-admin account cannot be changed." }, 404);
     const { error } = await adminClient.from("portal_admin_accounts")
-      .update({ role_id: roleId, updated_at: new Date().toISOString() }).eq("user_id", targetId);
+      .update({ role_id: roleIds[0], role_ids: roleIds, updated_at: new Date().toISOString() }).eq("user_id", targetId);
     if (error) return reply({ error: error.message }, 500);
     await adminClient.from("portal_admin_activity").insert({
       actor_user_id: actor.id, target_user_id: targetId,
-      action: "subadmin_role_changed", details: { role_id: roleId },
+      action: "subadmin_roles_changed", details: { role_ids: roleIds },
     });
-    return reply({ ok: true, message: "Sub-admin role updated." });
+    return reply({ ok: true, message: "Sub-admin roles updated." });
   }
 
   if (action === "deactivate") {

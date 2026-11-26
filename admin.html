@@ -45,7 +45,7 @@
 <label>Full name<input id="subAdminName" maxlength="120" required></label>
 <label>Email address<input id="subAdminEmail" type="email" maxlength="254" required></label>
 <label>Temporary password<input id="subAdminTempPassword" type="password" minlength="12" autocomplete="new-password" required><small>At least 12 characters. Share securely; the sub-admin must change it at first login after Stage 3.</small></label>
-<label>Role<select id="subAdminRole" required></select></label>
+<fieldset style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.8rem 1rem"><legend>Assign one or more roles</legend><div id="subAdminRoleChoices"></div><small>Select every responsibility this staff member should have.</small></fieldset>
 </div>
 <div class="admin-actions"><button type="submit" class="primary-btn" id="createSubAdminBtn">Create Sub-Admin</button><button type="button" class="secondary-btn" id="refreshSubAdminsBtn">Refresh list</button></div>
 <p id="subAdminMessage" role="status"></p>
@@ -57,7 +57,7 @@
 <div class="form-grid">
 <label>Candidate's registered email<input id="existingCandidateEmail" type="email" maxlength="254" autocomplete="off" required></label>
 <label>Display name (optional)<input id="existingCandidateName" maxlength="120" placeholder="Use the candidate profile name if blank"></label>
-<label>Sub-Admin role<select id="existingCandidateRole" required></select></label>
+<fieldset style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.8rem 1rem"><legend>Assign one or more roles</legend><div id="existingCandidateRoleChoices"></div><small>Select every responsibility this candidate should have.</small></fieldset>
 </div>
 <div class="source-notice">For safety, this assignment is initially inactive. After activation, the candidate signs in with their existing password and must change it before accessing the Admin Portal. Changing the password also changes it for their candidate login because both use the same account.</div>
 <div class="admin-actions"><button type="submit" class="primary-btn" id="assignExistingCandidateBtn">Assign Existing Candidate</button></div>
