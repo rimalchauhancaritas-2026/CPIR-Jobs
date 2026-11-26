@@ -699,7 +699,7 @@ async function loadSubAdmins(){
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
  $('subAdminsList').querySelectorAll('.subadmin-activate').forEach(btn=>btn.addEventListener('click',async()=>{
-  const row=btn.closest('[data-subadmin-id]');if(!confirm('Activate '+row.querySelector('strong').textContent+'? They will still need to change their temporary password.'))return;btn.disabled=true;
+  const row=btn.closest('[data-subadmin-id]');if(!confirm('Activate '+row.querySelector('strong').textContent+'? They will need to change their password before accessing the Admin Portal.'))return;btn.disabled=true;
   try{const result=await callSubAdminManager({action:'activate',user_id:row.dataset.subadminId});msg('subAdminMessage',result.message);await loadSubAdmins();}
   catch(e){msg('subAdminMessage',e.message);btn.disabled=false;}
  }));
