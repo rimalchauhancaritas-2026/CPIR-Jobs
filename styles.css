@@ -930,3 +930,56 @@ body.disclaimer-open{overflow:hidden}
   }
   .hero-inner .search-panel{position:relative;z-index:3}
 }
+
+
+/* Homepage hero refinement: shorter mountain banner, search below it */
+.hero{
+  min-height:0!important;
+  padding:30px 0 26px!important;
+  background:transparent!important;
+}
+.hero-landscape{
+  inset:0 0 82px!important;
+  border-radius:0;
+}
+.hero-archbishop-photo{
+  top:calc((100% - 82px)/2)!important;
+  bottom:auto!important;
+  transform:translateY(-50%)!important;
+  width:clamp(185px,19vw,250px)!important;
+  height:clamp(245px,30vw,315px)!important;
+  max-height:calc(100% - 105px)!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+.hero-inner{
+  padding-left:clamp(225px,25vw,330px)!important;
+}
+.hero-inner .search-panel{
+  width:calc(100% + clamp(225px,25vw,330px))!important;
+  margin-left:calc(-1 * clamp(225px,25vw,330px))!important;
+  margin-top:25px!important;
+  margin-bottom:0!important;
+  transform:none!important;
+}
+@media(max-width:1100px) and (min-width:761px){
+  .hero-inner{padding-left:225px!important}
+  .hero-inner .search-panel{width:calc(100% + 225px)!important;margin-left:-225px!important}
+}
+@media(max-width:760px){
+  .hero{padding:24px 0 20px!important}
+  .hero-landscape{inset:0 0 76px!important}
+  .hero-archbishop-photo{
+    top:calc((100% - 76px)/2)!important;
+    width:112px!important;
+    height:165px!important;
+    max-height:calc(100% - 90px)!important;
+    opacity:.55!important;
+  }
+  .hero-inner{padding-left:0!important}
+  .hero-inner .search-panel{
+    width:100%!important;
+    margin:22px 0 0!important;
+    transform:none!important;
+  }
+}
