@@ -993,3 +993,26 @@ body.disclaimer-open{overflow:hidden}
     linear-gradient(90deg,rgba(3,36,66,.72) 0%,rgba(4,55,91,.50) 52%,rgba(5,62,92,.34) 100%),
     var(--portal-scenic) center 48%/cover no-repeat!important;
 }
+
+
+/* Align the Archbishop portrait with the bottom edge of the mountain banner */
+@media(min-width:761px){
+  .hero-archbishop-photo{
+    top:auto!important;
+    bottom:82px!important;
+    transform:none!important;
+    height:clamp(230px,29vw,300px)!important;
+    max-height:calc(100% - 82px)!important;
+    object-position:center bottom!important;
+  }
+}
+@media(max-width:760px){
+  .hero-archbishop-photo{
+    top:auto!important;
+    bottom:76px!important;
+    transform:none!important;
+    height:clamp(145px,42vw,175px)!important;
+    max-height:calc(100% - 76px)!important;
+    object-position:center bottom!important;
+  }
+}
