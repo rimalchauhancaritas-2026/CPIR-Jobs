@@ -899,3 +899,34 @@ body.disclaimer-open{overflow:hidden}
  .hero-inner{padding-left:0}
  .hero-inner .search-panel{width:100%;margin-left:0!important}
 }
+
+
+/* Refined homepage Archbishop portrait placement */
+@media(min-width:761px){
+  .hero{position:relative;overflow:hidden}
+  .hero-archbishop-photo{
+    left:max(10px,calc((100vw - 1400px)/2 + 12px))!important;
+    top:50%!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    width:clamp(185px,19vw,255px)!important;
+    height:clamp(265px,34vw,345px)!important;
+    max-height:calc(100% - 54px)!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+    -webkit-mask-image:linear-gradient(to right,#000 0%,#000 86%,transparent 100%)!important;
+    mask-image:linear-gradient(to right,#000 0%,#000 86%,transparent 100%)!important;
+  }
+}
+@media(max-width:760px){
+  .hero-archbishop-photo{
+    top:50%!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    width:112px!important;
+    height:172px!important;
+    max-height:calc(100% - 40px)!important;
+    opacity:.55!important;
+  }
+  .hero-inner .search-panel{position:relative;z-index:3}
+}
