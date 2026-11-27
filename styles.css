@@ -864,3 +864,38 @@ body.disclaimer-open{overflow:hidden}
   .hero-inner .search-panel{width:100%;margin-left:0!important}
   .hero-copy{position:relative;z-index:1}
 }
+
+
+/* Homepage header and portrait corrections */
+.nav-wrap>.brand{display:flex;align-items:center;gap:13px;flex:0 1 auto}
+.nav-wrap>.brand .brand-copy{display:flex;flex-direction:column;min-width:0;white-space:nowrap}
+.nav-wrap>.brand .brand-copy strong{display:block;color:#082f55;font-family:Manrope,sans-serif;font-size:clamp(18px,1.55vw,25px);font-weight:800;line-height:1.15;letter-spacing:-.5px}
+.nav-wrap>.brand .brand-copy small{display:block;color:#1262ad;font-size:clamp(12px,1.02vw,16px);font-weight:700;line-height:1.25;letter-spacing:0;margin-top:3px}
+.nav-wrap>.diocese-header-mark{width:68px;height:68px;margin:0 0 0 14px;padding:0;flex:0 0 68px}
+.nav-wrap nav{min-width:0;margin-left:auto;flex:1 1 auto;justify-content:flex-end}
+.hero-archbishop-photo{left:max(0px,calc((100vw - 1400px)/2));bottom:0;width:clamp(220px,24vw,330px);height:100%;max-height:430px;object-fit:contain;object-position:center bottom;opacity:1;-webkit-mask-image:linear-gradient(to right,#000 0%,#000 88%,transparent 100%);mask-image:linear-gradient(to right,#000 0%,#000 88%,transparent 100%)}
+.hero-inner{padding-left:clamp(230px,26vw,350px)}
+.hero-inner .search-panel{width:calc(100% + clamp(230px,26vw,350px));margin-left:calc(-1 * clamp(230px,26vw,350px))!important}
+@media(max-width:1100px){
+ .nav-wrap>.brand .caritas-logo{width:125px;max-width:16vw}
+ .nav-wrap>.brand .brand-copy strong{font-size:18px}
+ .nav-wrap>.brand .brand-copy small{font-size:12px}
+ .nav-wrap>.diocese-header-mark{width:56px;height:56px;flex-basis:56px;margin-left:8px}
+ .nav-wrap nav{gap:8px}
+ .hero-inner{padding-left:225px}
+ .hero-inner .search-panel{width:calc(100% + 225px);margin-left:-225px!important}
+}
+@media(max-width:760px){
+ .nav-wrap{flex-wrap:wrap;min-height:74px;padding-top:8px;padding-bottom:8px}
+ .nav-wrap>.brand{gap:7px;max-width:calc(100% - 120px)}
+ .nav-wrap>.brand .caritas-logo{width:76px;max-width:22vw}
+ .nav-wrap>.brand .brand-copy{white-space:normal}
+ .nav-wrap>.brand .brand-copy strong{font-size:13px}
+ .nav-wrap>.brand .brand-copy small{font-size:10px}
+ .nav-wrap>.diocese-header-mark{width:48px;height:48px;flex-basis:48px;margin-left:auto;margin-right:4px}
+ .nav-wrap>.menu-btn{order:3;margin-left:auto}
+ .nav-wrap nav{order:4;flex-basis:100%;margin:0;top:100%;left:0;right:0}
+ .hero-archbishop-photo{width:135px;height:205px;left:0;top:0;bottom:auto;max-height:none;opacity:.9;-webkit-mask-image:linear-gradient(to right,#000 0%,#000 72%,transparent 100%);mask-image:linear-gradient(to right,#000 0%,#000 72%,transparent 100%)}
+ .hero-inner{padding-left:0}
+ .hero-inner .search-panel{width:100%;margin-left:0!important}
+}
