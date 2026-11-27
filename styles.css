@@ -983,3 +983,13 @@ body.disclaimer-open{overflow:hidden}
     transform:none!important;
   }
 }
+
+
+/* Restore the scenic mountain banner behind the shortened hero area */
+.hero{background:transparent!important}
+.hero-landscape{
+  display:block!important;
+  background:
+    linear-gradient(90deg,rgba(3,36,66,.72) 0%,rgba(4,55,91,.50) 52%,rgba(5,62,92,.34) 100%),
+    var(--portal-scenic) center 48%/cover no-repeat!important;
+}
